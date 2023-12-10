@@ -5,7 +5,7 @@ from logging import Logger
 from sqlalchemy import select, update, and_, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.constants import StatusTask
+from rosemary.constants import StatusTaskRosemary
 from rosemary.custom_semaphore import CustomSemaphore
 from rosemary.db.db import async_session
 from rosemary.db.models import RosemaryTaskModel
@@ -15,10 +15,10 @@ from rosemary.task_inreface import RosemaryTask
 
 class RosemaryRunner:
 
-    def __init__(self, Rosemary_builder: RosemaryBuilder):
-        self.Rosemary_builder: RosemaryBuilder = Rosemary_builder
+    def __init__(self, rosemary_builder: RosemaryBuilder):
+        self.Rosemary_builder: RosemaryBuilder = rosemary_builder
         self._max_task_semaphore: int = 50
-        self.logger: Logger = Rosemary_builder.logger
+        self.logger: Logger = rosemary_builder.logger
         self.__shutdown_requested: bool = False
 
     def __handle_signal(self, *args):
@@ -33,7 +33,7 @@ class RosemaryRunner:
             self, session: AsyncSession, limit: int, worker_name: str
     ) -> list[int]:
         select_query = select(RosemaryTaskModel.id).where(
-            RosemaryTaskModel.status.in_([StatusTask.NEW.value, StatusTask.FAILED.value])
+            RosemaryTaskModel.status.in_([StatusTaskRosemary.NEW.value, StatusTaskRosemary.FAILED.value])
         ).limit(limit)
         res = await session.execute(select_query)
         ids_to_update = res.scalars().all()
@@ -42,13 +42,13 @@ class RosemaryRunner:
             RosemaryTaskModel.status.in_(
             )
         ).values(
-            status=StatusTask.IN_PROGRESS.value,
+            status=StatusTaskRosemary.IN_PROGRESS.value,
             worker=worker_name,
         ).limit(limit)
         await session.execute(update_status)
 
         query = select(RosemaryTaskModel.id).where(and_(
-            RosemaryTaskModel.status == StatusTask.IN_PROGRESS.value,
+            RosemaryTaskModel.status == StatusTaskRosemary.IN_PROGRESS.value,
             RosemaryTaskModel.worker == worker_name
         ))
         tasks_ids_row: Result = await session.execute(query)

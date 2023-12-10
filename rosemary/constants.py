@@ -1,7 +1,7 @@
 import enum
 
 
-class StatusTask(enum.Enum):
+class StatusTaskRosemary(enum.Enum):
     NEW = "NEW"
     IN_PROGRESS = "RUNNING"
     FAILED = "FAILED"
@@ -9,11 +9,18 @@ class StatusTask(enum.Enum):
     CANCELED = "CANCELED"
 
 
-class TypeTask(enum.Enum):
+class TypeTaskRosemary(enum.Enum):
     REPEATABLE = "REPEATABLE"
     CRON = "CRON"
     MANUAL = "MANUAL"
+    NOT_SETUP = "NOT_SETUP"
 
     @classmethod
     def values(cls):
         return [member.value for member in cls]
+
+
+class StatusWorkerRosemary(enum.Enum):
+    WORKING = 'WORKING'
+    KILLED = 'KILLED'
+    CHECKING = 'CHECKING'

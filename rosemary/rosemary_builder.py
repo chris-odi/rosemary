@@ -1,6 +1,6 @@
 from logging import Logger
 
-from rosemary.constants import TypeTask
+from rosemary.constants import TypeTaskRosemary
 from rosemary.task_inreface import RosemaryTask
 
 
@@ -17,7 +17,7 @@ class RosemaryBuilder:
         self.logger.info(f'Registered {task.get_type()} task "{task.get_name()}"')
         self._registered_tasks[task.get_name()] = task
 
-        if task.get_type() == TypeTask.REPEATABLE.value:
+        if task.get_type() == TypeTaskRosemary.REPEATABLE.value:
             self._repeatable_tasks.append(task)
 
     def get_task_by_name(self, task_name: str):

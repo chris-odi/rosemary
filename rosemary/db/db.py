@@ -2,8 +2,6 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import declarative_base
 
-from rosemary.core.settings import settings
-
 
 def get_session(SQLALCHEMY_DATABASE_URL: str):
     engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
@@ -11,11 +9,9 @@ def get_session(SQLALCHEMY_DATABASE_URL: str):
     return async_session
 
 
-SQLALCHEMY_DATABASE_URL = (
-    f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}'
-    f'@{settings.POSTGRES_HOST}:5432/{settings.POSTGRES_DB}')
+# SQLALCHEMY_DATABASE_URL = (
+#     f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}'
+#     f'@{settings.POSTGRES_HOST}:5432/{settings.POSTGRES_DB}')
 
-async_session = get_session(SQLALCHEMY_DATABASE_URL)
 
 Base = declarative_base()
-

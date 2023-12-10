@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rosemary"
-version = "1.0.0"
+version = "1.0.1"
 description = ""
 authors = ["Chris Odi <chris.odi76@gmail.com>"]
 readme = "README.md"
@@ -14,6 +14,9 @@ asyncio = "^3.4.3"
 logger = "^1.4"
 importlib = "^1.0.4"
 setuptools = "^69.0.2"
+alembic = "^1.13.0"
+pydantic-settings = "^2.1.0"
+psycopg2-binary = "^2.9.9"
 
 
 [build-system]
