@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "rosemary"
+version = "1.0.0"
+description = ""
+authors = ["Chris Odi <chris.odi76@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.5.2"
+sqlalchemy = "^2.0.23"
+asyncpg = "^0.29.0"
+asyncio = "^3.4.3"
+logger = "^1.4"
+importlib = "^1.0.4"
+setuptools = "^69.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
