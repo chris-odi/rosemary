@@ -20,3 +20,6 @@ Requirements:
 * logger = "^1.4"
 * importlib = "^1.0.4"
 * setuptools = "^69.0.2"
+* alembic = "^1.13.0"
+* pydantic-settings = "^2.1.0"
+* psycopg2-binary = "^2.9.9"
