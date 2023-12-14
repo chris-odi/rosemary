@@ -16,9 +16,11 @@ class RosemaryTaskModel(Base):
     type_task = Column(Enum(TypeTaskRosemary), default=TypeTaskRosemary.NOT_SETUP, nullable=False)
     status = Column(Enum(StatusTaskRosemary), default=StatusTaskRosemary.NEW, nullable=False)
     error: str = Column(String, default=None)
-    retryd: int = Column(Integer, default=0, nullable=False)
+    retry: int = Column(Integer, default=0, nullable=False)
     worker: UUID = Column(UUID_DB, default=None)
     max_retry: int = Column(Integer, default=1, nullable=False)
+    timeout: int = Column(Integer, default=30, nullable=False)
+    task_return: str | dict | int | None = Column(JSON, default=None)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -29,6 +31,7 @@ class RosemaryWorkerModel(Base):
     id: int = Column(BIGINT, primary_key=True, autoincrement=True, index=True)
     uuid: UUID = Column(UUID_DB, unique=True, nullable=False)
     status = Column(Enum(StatusWorkerRosemary), default=StatusWorkerRosemary.CHECKING, nullable=False)
+    ping_time = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

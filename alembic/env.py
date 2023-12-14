@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from rosemary.settings import settings
+# from rosemary.settings import settings
 from rosemary.db.db import Base
 
 # this is the Alembic Config object, which provides
@@ -13,13 +13,13 @@ from rosemary.db.db import Base
 config = context.config
 target_metadata = Base.metadata
 
-sqlalchemy_url = (f'postgresql://'
-                  f'{settings.POSTGRES_USER}:'
-                  f'{settings.POSTGRES_PASSWORD}@'
-                  f'{settings.POSTGRES_HOST}:'
-                  f'{settings.POSTGRES_PORT}/'
-                  f'{settings.POSTGRES_DB}')
-config.set_main_option('sqlalchemy.url', sqlalchemy_url)
+# sqlalchemy_url = (f'postgresql://'
+#                   f'{settings.POSTGRES_USER}:'
+#                   f'{settings.POSTGRES_PASSWORD}@'
+#                   f'{settings.POSTGRES_HOST}:'
+#                   f'{settings.POSTGRES_PORT}/'
+#                   f'{settings.POSTGRES_DB}')
+# config.set_main_option('sqlalchemy.url', sqlalchemy_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -56,6 +56,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table='rosemary_alembic_version',
     )
 
     with context.begin_transaction():
@@ -77,7 +78,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table='rosemary_alembic_version',
         )
 
         with context.begin_transaction():
