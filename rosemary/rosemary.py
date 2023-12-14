@@ -5,9 +5,10 @@ from logging import Logger
 from sqlalchemy import select, update, and_, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.alembic import alembic_upgrade_head
+from rosemary.db.alembic import alembic_upgrade_head
 from rosemary.constants import StatusTaskRosemary, TypeTaskRosemary
 from rosemary.custom_semaphore import CustomSemaphore
+from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryTaskModel
 from rosemary.rosemary_worker import RosemaryWorker
 from rosemary.task_inreface import RosemaryTask
@@ -15,13 +16,35 @@ from rosemary.task_inreface import RosemaryTask
 
 class Rosemary:
 
-    def __init__(self, *, logger, max_tasks_per_worker: int = 50, workers: int = 1):
+    def __init__(
+            self,
+            *,
+            db_host: str,
+            db_port: int | str = 5432,
+            db_user: str,
+            db_password: str,
+            db_name_db: str,
+            logger: Logger | None = None,
+            max_tasks_per_worker: int = 50,
+            workers: int = 1,
+    ):
         # self.Rosemary_builder: RosemaryBuilder = rosemary_builder
         self._max_task_semaphore: int = max_tasks_per_worker
         self.logger: Logger = logger
         self.__shutdown_requested: bool = False
         self._count_workers: int = workers
+
         self._workers = []
+        self._registered_tasks = {}
+        self._repeatable_tasks = []
+
+        self.__db_host = db_host
+        self.__db_port = db_port
+        self.__db_user = db_user
+        self.__db_password = db_password
+        self.__db_name_db = db_name_db
+
+        self.session = DBConnector(db_host, db_name_db, db_user, db_password, db_port).get_session()
 
     def _register_task(self, task: RosemaryTask):
         self.logger.info(f'Registered {task.get_type()} task "{task.get_name()}"')
@@ -32,6 +55,7 @@ class Rosemary:
 
     def get_task_by_name(self, task_name: str):
         return self._registered_tasks[task_name]
+
     def __handle_signal(self, *args):
         self.logger.error("Rosemary runner is shotdowning warm...")
         self.__shutdown_requested = True
@@ -66,19 +90,21 @@ class Rosemary:
         ids_tasks = [task_id_row[0] for task_id_row in tasks_ids_row]
         return ids_tasks
 
-    async def _run_migration(self, conn: AsyncSession):
-        alembic_upgrade_head()
+    async def _run_migration(self):
+        alembic_upgrade_head(
+            self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
+        )
 
-    async def _run_looping(self, session, worker):
-        await worker.ping()
+    async def _run_looping(self, session: AsyncSession, worker: RosemaryWorker):
 
         semaphore = CustomSemaphore(self._max_task_semaphore)
         while True:
+            await worker.ping(session)
             if self.__shutdown_requested:
-                self.logger.info('Rosemary runner is shotdowned warm!')
+                self.logger.info(f'Rosemary worker {worker.uuid} is shotdowned warm!')
                 return
             if semaphore.tasks_remaining() > 0:
-                ids_tasks = await self._get_new_tasks(session, semaphore.tasks_remaining(), session)
+                ids_tasks = await self._get_new_tasks(session, semaphore.tasks_remaining(), worker.uuid)
                 for id_task in ids_tasks:
                     await semaphore.acquire()
                     asyncio.create_task(self._run_task(id_task, semaphore, session))
@@ -91,12 +117,13 @@ class Rosemary:
 
     async def run_async(self):
         async with async_session() as session:
-            await self._run_migration(session)
+            await self._run_migration()
             for _ in range(self._count_workers):
                 worker = RosemaryWorker()
                 self._workers.append(worker)
-                await worker.register_in_db()
+                await worker.register_in_db(session)
                 await self._run_looping(session, worker)
+        self.logger.error('Rosemary is stopped because all workers is stopped!')
 
     async def _run_task(self, id_task: int, pool: CustomSemaphore, session: AsyncSession):
         try:
