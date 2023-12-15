@@ -57,13 +57,20 @@ class CheckLastIdTask(rosemary.Task):
             return result
 
 
+class RepeatableTaskModel(BaseModel):
+    time_sleep: int
+
+
 class RepeatableTask(rosemary.Task):
     type_task = TypeTaskRosemary.REPEATABLE
     timeout = 10
 
-    async def run(self, data):
-        await asyncio.sleep(5)
-        logger.info(f"I repeated at {datetime.utcnow()}")
+    def prepare_data_for_run(self, data: dict):
+        return RepeatableTaskModel(**data)
+
+    async def run(self, data: RepeatableTaskModel):
+        await asyncio.sleep(data.time_sleep)
+        logger.info(f"I repeated at {datetime.utcnow()} with params {data}")
 
 
 rosemary.register_task(SleepTask)
@@ -82,7 +89,7 @@ async def main():
     #         await SleepTask().create(data=a, session=session)
     # for _ in range(50):
     #     await SleepTask().create()
-    res = await RepeatableTask().create(data={'2': '1'})
+    res = await RepeatableTask().create(data=RepeatableTaskModel(time_sleep=6))
     print(res)
 
 asyncio.run(main())

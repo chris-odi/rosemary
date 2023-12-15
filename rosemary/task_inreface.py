@@ -18,10 +18,6 @@ class RosemaryTask(ABC):
     timeout = 30
 
     def __init__(self):
-        # self.max_retry = 3
-        # self.type_task: str | TypeTaskRosemary = TypeTaskRosemary.NOT_SETUP
-        # self.timeout = 30
-
         if isinstance(self.type_task, TypeTaskRosemary):
             self._type_task = self.type_task.value
             return
