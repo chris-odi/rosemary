@@ -3,8 +3,12 @@ from datetime import datetime
 from sqlalchemy import Column, BIGINT, DateTime, JSON, Enum, String, Integer, UUID as UUID_DB
 from uuid import UUID
 
+from sqlalchemy.ext.declarative import declarative_base
+
 from rosemary.constants import StatusTaskRosemary, TypeTaskRosemary, StatusWorkerRosemary
-from rosemary.db.db import Base
+
+
+Base = declarative_base()
 
 
 class RosemaryTaskModel(Base):

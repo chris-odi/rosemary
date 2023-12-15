@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import signal
 from logging import Logger
 
@@ -30,7 +31,8 @@ class Rosemary:
     ):
         # self.Rosemary_builder: RosemaryBuilder = rosemary_builder
         self._max_task_semaphore: int = max_tasks_per_worker
-        self.logger: Logger = logger
+        self.logger: Logger = logger or logging.getLogger()
+        self.logger.setLevel(1)
         self.__shutdown_requested: bool = False
         self._count_workers: int = workers
 
@@ -44,13 +46,15 @@ class Rosemary:
         self.__db_password = db_password
         self.__db_name_db = db_name_db
 
-        self.session = DBConnector(db_host, db_name_db, db_user, db_password, db_port).get_session()
+        self.db_connector = DBConnector(db_host, db_name_db, db_user, db_password, db_port)
+        self.RosemaryTask: RosemaryTask = type('RosemaryTask', (RosemaryTask,), {'get_session': lambda: self.session})
 
-    def _register_task(self, task: RosemaryTask):
-        self.logger.info(f'Registered {task.get_type()} task "{task.get_name()}"')
-        self._registered_tasks[task.get_name()] = task
+    def register_task(self, task: RosemaryTask):
+        ex_task = task()
+        self.logger.info(f'Registered {ex_task.get_type()} task "{ex_task.get_name()}"')
+        self._registered_tasks[ex_task.get_name()] = task
 
-        if task.get_type() == TypeTaskRosemary.REPEATABLE.value:
+        if ex_task.get_type() == TypeTaskRosemary.REPEATABLE.value:
             self._repeatable_tasks.append(task)
 
     def get_task_by_name(self, task_name: str):
@@ -116,8 +120,9 @@ class Rosemary:
         asyncio.run(self.run_async())
 
     async def run_async(self):
-        async with async_session() as session:
-            await self._run_migration()
+        await self._run_migration()
+
+        async with self.db_connector.get_session() as session:
             for _ in range(self._count_workers):
                 worker = RosemaryWorker()
                 self._workers.append(worker)

@@ -5,20 +5,20 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# from rosemary.settings import settings
-from rosemary.db.db import Base
+from rosemary.db.models import Base
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 target_metadata = Base.metadata
-
+#
 # sqlalchemy_url = (f'postgresql://'
-#                   f'{settings.POSTGRES_USER}:'
-#                   f'{settings.POSTGRES_PASSWORD}@'
-#                   f'{settings.POSTGRES_HOST}:'
-#                   f'{settings.POSTGRES_PORT}/'
-#                   f'{settings.POSTGRES_DB}')
+#                   f'postgres:'
+#                   f'postgres@'
+#                   f'0.0.0.0:'
+#                   f'5432/'
+#                   f'postgres')
 # config.set_main_option('sqlalchemy.url', sqlalchemy_url)
 
 # Interpret the config file for Python logging.
@@ -30,7 +30,6 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
