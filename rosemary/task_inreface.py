@@ -1,9 +1,10 @@
 import asyncio
+import json
 from abc import abstractmethod, ABC
 
 from pydantic import BaseModel
 from pydantic.v1 import BaseModel as BaseModel_V1
-from sqlalchemy import select
+from sqlalchemy import select, and_, String, cast
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -55,9 +56,10 @@ class RosemaryTask(ABC):
         if self.get_type() == TypeTaskRosemary.REPEATABLE.value and check_exist_repeatable:
             for _ in range(self.timeout + 10):
                 await asyncio.sleep(1)
-                query = select(RosemaryTaskModel).where(
-                    RosemaryTaskModel.name == self.get_name()
-                ).where(
+                query = select(RosemaryTaskModel).where(and_(
+                    RosemaryTaskModel.name == self.get_name(),
+                    cast(RosemaryTaskModel.data, String) == json.dumps(data)
+                )).where(
                     RosemaryTaskModel.status.in_([
                         StatusTaskRosemary.IN_PROGRESS.value,
                         StatusTaskRosemary.FAILED.value,

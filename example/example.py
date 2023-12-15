@@ -4,7 +4,6 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
 
 from rosemary.constants import TypeTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
@@ -77,13 +76,13 @@ class A(BaseModel):
 
 
 async def main():
-    a = A(x=123)
-    for _ in range(50):
-        async with rosemary.db_connector.get_session() as session:
-            await SleepTask().create(data=a, session=session)
-    for _ in range(50):
-        await SleepTask().create()
-    res = await RepeatableTask().create()
+    # a = A(x=123)
+    # for _ in range(50):
+    #     async with rosemary.db_connector.get_session() as session:
+    #         await SleepTask().create(data=a, session=session)
+    # for _ in range(50):
+    #     await SleepTask().create()
+    res = await RepeatableTask().create(data={'2': '1'})
     print(res)
 
 asyncio.run(main())

@@ -42,7 +42,6 @@ class Rosemary:
             max_tasks_per_worker: int = 50,
             workers: int = 1,
     ):
-        # self.Rosemary_builder: RosemaryBuilder = rosemary_builder
         self._max_task_semaphore: int = max_tasks_per_worker
         self.logger: Logger = logger or logging.getLogger()
         self.__shutdown_requested: bool = False
@@ -58,7 +57,6 @@ class Rosemary:
         self.__db_password = db_password
         self.__db_name_db = db_name_db
 
-        # self.db_connector = DBConnector(db_host, db_name_db, db_user, db_password, db_port)
         self.db_connector = DBConnector(
             self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
         )
@@ -124,10 +122,10 @@ class Rosemary:
     def _run_looping(self, worker: RosemaryWorker):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.looping(worker))
+        loop.run_until_complete(self._looping(worker))
         loop.close()
 
-    async def looping(self, worker: RosemaryWorker):
+    async def _looping(self, worker: RosemaryWorker):
         worker.db_connector = DBConnector(
             self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
         )
