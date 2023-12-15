@@ -14,6 +14,7 @@ from rosemary.custom_semaphore import CustomSemaphore
 from rosemary.db.alembic import alembic_upgrade_head
 from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryTaskModel
+from rosemary.logger import get_logger
 from rosemary.rosemary_worker import RosemaryWorker
 from rosemary.task_inreface import RosemaryTask
 
@@ -38,12 +39,12 @@ class Rosemary:
             db_user: str,
             db_password: str,
             db_name_db: str,
-            logger: Logger | None = None,
+            # logger: Logger | None = None,
             max_tasks_per_worker: int = 50,
             workers: int = 1,
     ):
         self._max_task_semaphore: int = max_tasks_per_worker
-        self.logger: Logger = logger or logging.getLogger()
+        self.logger: Logger = get_logger('Main')
         self.__shutdown_requested: bool = False
         self._count_workers: int = workers
 
@@ -131,12 +132,12 @@ class Rosemary:
         )
         async with worker.db_connector.get_session() as session:
             await worker.register_in_db(session)
-            self.logger.info(f'Start looping by worker {worker.uuid}')
+            worker.logger.info(f'Start looping by worker {worker.uuid}')
             semaphore = CustomSemaphore(self._max_task_semaphore)
             while True:
                 await worker.ping(session)
                 if self.__shutdown_requested:
-                    self.logger.info(f'Rosemary worker {worker.uuid} is shotdowned warm!')
+                    worker.logger.info(f'Rosemary worker {worker.uuid} is shotdowned warm!')
                     return
                 if semaphore.tasks_remaining() > 0:
                     ids_tasks = await self._get_new_tasks(session, semaphore.tasks_remaining(), worker.uuid)
@@ -153,7 +154,7 @@ class Rosemary:
         for _ in range(self._count_workers):
             worker = RosemaryWorker()
             self._workers.append(worker)
-            self.logger.info(f'Worker {worker.uuid} registered!')
+            worker.logger.info(f'Worker {worker.uuid} registered!')
             thread = threading.Thread(target=self._run_looping, args=(worker,))
             workers_threads.append(thread)
         for thread in workers_threads:
@@ -173,7 +174,7 @@ class Rosemary:
                         result = await session.execute(query)
                         task_db: RosemaryTaskModel = result.scalars().one()
                     except Exception as e:
-                        self.logger.error(f'Error while getting task from DB {e}', exc_info=e)
+                        worker.logger.error(f'Error while getting task {id_task} from DB {e}', exc_info=e)
                         return
                     try:
                         task: RosemaryTask = self.get_task_by_name(task_db.name)()
@@ -201,6 +202,6 @@ class Rosemary:
             if will_not_repeat and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
                 await task.create(data=task_db.data, session=session, check_exist_repeatable=False)
         except Exception as e:
-            self.logger.error(f'Error while creating session for DB {e}', exc_info=e)
+            worker.logger.error(f'Error while creating session for DB {e}. Task: {id_task}', exc_info=e)
         finally:
             await pool.release()

@@ -29,8 +29,7 @@ rosemary = Rosemary(
     db_user='postgres',
     db_name_db='postgres',
     max_tasks_per_worker=30,
-    workers=1,
-    logger=logger
+    workers=3,
 )
 
 
@@ -84,8 +83,8 @@ class A(BaseModel):
 
 async def main():
     a = A(x=123)
-    for _ in range(50):
-        await SleepTask().create(data=a)
+    # for _ in range(5000):
+    #     await SleepTask().create(data=a)
     res = await RepeatableTask().create(data=RepeatableTaskModel(time_sleep=7))
     print(res)
 

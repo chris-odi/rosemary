@@ -1,10 +1,12 @@
 import datetime
 import uuid
+from logging import Logger
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.constants import StatusWorkerRosemary
 from rosemary.db.models import RosemaryWorkerModel
+from rosemary.logger import get_logger
 
 
 class RosemaryWorker:
@@ -12,6 +14,7 @@ class RosemaryWorker:
         self.uuid = uuid.uuid4()
         self.worker: RosemaryWorkerModel | None = None
         self.db_connector = None
+        self.logger: Logger | None = get_logger(str(self.uuid))
 
     async def register_in_db(self, session: AsyncSession):
         self.worker = RosemaryWorkerModel(uuid=self.uuid)
