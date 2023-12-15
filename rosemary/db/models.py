@@ -15,16 +15,16 @@ class RosemaryTaskModel(Base):
     __tablename__ = "rosemary_tasks"
 
     id = Column(BIGINT, primary_key=True, autoincrement=True, index=True)
-    data: dict = Column(JSON, default=None)
     name: str = Column(String, nullable=False)
+    data: dict = Column(JSON, default=None)
     type_task = Column(Enum(TypeTaskRosemary), default=TypeTaskRosemary.NOT_SETUP, nullable=False)
     status = Column(Enum(StatusTaskRosemary), default=StatusTaskRosemary.NEW, nullable=False)
-    error: str = Column(String, default=None)
     retry: int = Column(Integer, default=0, nullable=False)
-    worker: UUID = Column(UUID_DB, default=None)
     max_retry: int = Column(Integer, default=1, nullable=False)
+    error: str = Column(String, default=None)
+    task_return: str = Column(String, default=None)
+    worker: UUID = Column(UUID_DB, default=None)
     timeout: int = Column(Integer, default=30, nullable=False)
-    task_return: str | dict | int | None = Column(JSON, default=None)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

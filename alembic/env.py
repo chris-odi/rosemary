@@ -13,13 +13,13 @@ from rosemary.db.models import Base
 config = context.config
 target_metadata = Base.metadata
 #
-# sqlalchemy_url = (f'postgresql://'
-#                   f'postgres:'
-#                   f'postgres@'
-#                   f'0.0.0.0:'
-#                   f'5432/'
-#                   f'postgres')
-# config.set_main_option('sqlalchemy.url', sqlalchemy_url)
+sqlalchemy_url = (f'postgresql://'
+                  f'postgres:'
+                  f'postgres@'
+                  f'0.0.0.0:'
+                  f'5432/'
+                  f'postgres')
+config.set_main_option('sqlalchemy.url', sqlalchemy_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

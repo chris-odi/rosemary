@@ -7,6 +7,7 @@ class StatusTaskRosemary(enum.Enum):
     FAILED = "FAILED"
     FATAL = "FATAL"
     CANCELED = "CANCELED"
+    FINISHED = 'FINISHED'
 
 
 class TypeTaskRosemary(enum.Enum):
