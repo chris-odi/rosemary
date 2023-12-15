@@ -77,8 +77,8 @@ class RosemaryTask(ABC):
             timeout=self.timeout
         )
         session.add(new_task)
-        res = await session.commit()
-        return res
+        await session.commit()
+        return new_task.id
 
     def prepare_data_for_run(self, data: dict):
         return data

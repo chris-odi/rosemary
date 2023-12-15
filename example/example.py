@@ -83,13 +83,10 @@ class A(BaseModel):
 
 
 async def main():
-    # a = A(x=123)
-    # for _ in range(50):
-    #     async with rosemary.db_connector.get_session() as session:
-    #         await SleepTask().create(data=a, session=session)
-    # for _ in range(50):
-    #     await SleepTask().create()
-    res = await RepeatableTask().create(data=RepeatableTaskModel(time_sleep=6))
+    a = A(x=123)
+    for _ in range(50):
+        await SleepTask().create(data=a)
+    res = await RepeatableTask().create(data=RepeatableTaskModel(time_sleep=7))
     print(res)
 
 asyncio.run(main())
