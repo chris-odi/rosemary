@@ -3,7 +3,7 @@ import enum
 
 class StatusTaskRosemary(enum.Enum):
     NEW = "NEW"
-    IN_PROGRESS = "RUNNING"
+    IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     FATAL = "FATAL"
     CANCELED = "CANCELED"

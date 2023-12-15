@@ -14,7 +14,7 @@ Base = declarative_base()
 class RosemaryTaskModel(Base):
     __tablename__ = "rosemary_tasks"
 
-    id: int = Column(BIGINT, primary_key=True, autoincrement=True, index=True)
+    id = Column(BIGINT, primary_key=True, autoincrement=True, index=True)
     data: dict = Column(JSON, default=None)
     name: str = Column(String, nullable=False)
     type_task = Column(Enum(TypeTaskRosemary), default=TypeTaskRosemary.NOT_SETUP, nullable=False)

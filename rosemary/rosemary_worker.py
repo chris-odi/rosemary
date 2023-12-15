@@ -13,6 +13,7 @@ class RosemaryWorker:
 
     async def register_in_db(self, session: AsyncSession):
         self.worker: RosemaryWorkerModel = RosemaryWorkerModel(uuid=self.uuid)
+        session.add(self.worker)
         await session.commit()
 
     async def ping(self, session: AsyncSession):
