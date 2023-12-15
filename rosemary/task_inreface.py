@@ -96,16 +96,16 @@ class RosemaryTask(ABC):
             return data.dict()
         raise TypeError(f'Incorrect type of data: "{type(data)}"')
 
-    def create_sync(
-            self,
-            *,
-            data: dict | BaseModel | None = None,
-            session: AsyncSession | None = None,
-            check_exist_repeatable: bool = True,
-    ):
-        return asyncio.run(self.create(
-            data=data, session=session, check_exist_repeatable=check_exist_repeatable
-        ))
+    # def create_sync(
+    #         self,
+    #         *,
+    #         data: dict | BaseModel | None = None,
+    #         session: AsyncSession | None = None,
+    #         check_exist_repeatable: bool = True,
+    # ):
+    #     return asyncio.run(self.create(
+    #         data=data, session=session, check_exist_repeatable=check_exist_repeatable
+    #     ))
 
     async def create(
             self, *, data: dict | BaseModel | None = None,

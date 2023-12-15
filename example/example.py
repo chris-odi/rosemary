@@ -3,8 +3,11 @@ import random
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 
 from rosemary.constants import TypeTaskRosemary
+from rosemary.db.models import RosemaryTaskModel
 from rosemary.rosemary import Rosemary
 import logging
 
@@ -44,7 +47,15 @@ class SleepTask(rosemary.Task):
 
 class CheckLastIdTask(rosemary.Task):
     async def run(self, data):
-        return
+        async with self.get_session() as session:
+            query = select(RosemaryTaskModel).where(
+                RosemaryTaskModel.name == self.get_name()
+            )
+            result = await session.execute(query)
+            task_db: RosemaryTaskModel = result.scalars().one()
+            result = task_db.id
+            logger.info(f'Task ID GET: {result}')
+            return result
 
 
 class RepeatableTask(rosemary.Task):
