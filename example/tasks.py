@@ -5,9 +5,9 @@ from datetime import datetime
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from example.rosemary_config import rosemary
 from rosemary.constants import TypeTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
-from rosemary.rosemary import Rosemary
 import logging
 
 logger = logging.getLogger('Rosemary Task')
@@ -20,17 +20,6 @@ formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
-
-
-rosemary = Rosemary(
-    db_host='0.0.0.0',
-    db_password='postgres',
-    db_port=5432,
-    db_user='postgres',
-    db_name_db='postgres',
-    max_tasks_per_worker=30,
-    workers=3,
-)
 
 
 class SleepTask(rosemary.Task):
@@ -70,23 +59,3 @@ class RepeatableTask(rosemary.Task):
     async def run(self, data: RepeatableTaskModel):
         await asyncio.sleep(data.time_sleep)
         logger.info(f"I repeated at {datetime.utcnow()} with params {data}")
-
-
-rosemary.register_task(SleepTask)
-rosemary.register_task(CheckLastIdTask)
-rosemary.register_task(RepeatableTask)
-
-
-class A(BaseModel):
-    x: int
-
-
-async def main():
-    a = A(x=123)
-    # for _ in range(5000):
-    #     await SleepTask().create(data=a)
-    res = await RepeatableTask().create(data=RepeatableTaskModel(time_sleep=7))
-    print(res)
-
-asyncio.run(main())
-rosemary.run()

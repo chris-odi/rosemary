@@ -1,7 +1,7 @@
 import asyncio
-import logging
 import signal
 import threading
+import traceback
 from abc import ABC
 from logging import Logger
 from typing import Type, Sequence
@@ -80,6 +80,7 @@ class Rosemary:
     def __register_signal(self):
         signal.signal(signal.SIGTERM, self.__handle_signal)
         signal.signal(signal.SIGINT, self.__handle_signal)
+        signal.signal(signal.SIGKILL, self.__handle_signal)
 
     async def _get_new_tasks(
             self, session: AsyncSession, limit: int, worker_name: str
@@ -164,20 +165,28 @@ class Rosemary:
         self.logger.error('Rosemary is stopped because all workers is stopped!')
 
     async def _run_task(self, id_task: int, pool: CustomSemaphore, worker: RosemaryWorker):
+        error = None
+
         try:
             async with worker.db_connector.get_session() as session:
-                async with session.begin():
+                # async with session.begin():
+                try:
+                    query = select(RosemaryTaskModel).where(
+                        RosemaryTaskModel.id == id_task
+                    )
+                    result = await session.execute(query)
+                    task_db: RosemaryTaskModel = result.scalars().one()
+                except Exception as e:
+                    worker.logger.exception(f'Error while getting task {id_task} from DB {e}', exc_info=e)
+                    return
+                try:
+                    task: RosemaryTask = self.get_task_by_name(task_db.name)()
+                except KeyError:
+                    error = 'Task not registered in rosemary!'
+                except Exception as e:
+                    error = f'{e.__class__.__name__}: {repr(e)}. Traceback: {traceback.print_tb(e.__traceback__)}'
+                else:
                     try:
-                        query = select(RosemaryTaskModel).where(
-                            RosemaryTaskModel.id == id_task
-                        ).with_for_update(skip_locked=True)
-                        result = await session.execute(query)
-                        task_db: RosemaryTaskModel = result.scalars().one()
-                    except Exception as e:
-                        worker.logger.error(f'Error while getting task {id_task} from DB {e}', exc_info=e)
-                        return
-                    try:
-                        task: RosemaryTask = self.get_task_by_name(task_db.name)()
                         result_task = await asyncio.wait_for(
                             task.run(task.prepare_data_for_run(task_db.data)), timeout=task_db.timeout
                         )
@@ -185,23 +194,25 @@ class Rosemary:
                         if isinstance(e, asyncio.TimeoutError):
                             error = f'TimeoutError: The task has timed out {task_db.timeout}'
                         else:
-                            error = f'{e.__class__.__name__}: {repr(e)}'
-                        task_db.error = error
-                        if task_db.retry >= task_db.max_retry:
-                            will_not_repeat = True
-                            task_db.status = StatusTaskRosemary.FATAL.value
-                        else:
-                            will_not_repeat = False
-                            task_db.status = StatusTaskRosemary.FAILED.value
-                        await session.commit()
-                    else:
-                        task_db.status = StatusTaskRosemary.FINISHED.value
-                        task_db.task_return = str(result_task)
-                        await session.commit()
+                            error = f'{e.__class__.__name__}: {repr(e)}. Traceback: {traceback.print_tb(e.__traceback__)}'
+
+                if error:
+                    task_db.error = error
+                    if task_db.retry >= task_db.max_retry:
                         will_not_repeat = True
+                        task_db.status = StatusTaskRosemary.FATAL.value
+                    else:
+                        will_not_repeat = False
+                        task_db.status = StatusTaskRosemary.FAILED.value
+                    await session.commit()
+                else:
+                    task_db.status = StatusTaskRosemary.FINISHED.value
+                    task_db.task_return = str(result_task)
+                    await session.commit()
+                    will_not_repeat = True
             if will_not_repeat and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
                 await task.create(data=task_db.data, session=session, check_exist_repeatable=False)
         except Exception as e:
-            worker.logger.error(f'Error while creating session for DB {e}. Task: {id_task}', exc_info=e)
+            worker.logger.exception(f'Error while creating session for DB {e}. Task: {id_task}', exc_info=e)
         finally:
             await pool.release()
