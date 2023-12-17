@@ -1,5 +1,5 @@
-from example.rosemary_config import rosemary
-from example.tasks import SleepTask, CheckLastIdTask, RepeatableTask
+from rosemary_config import rosemary
+from tasks import SleepTask, CheckLastIdTask, RepeatableTask
 
 rosemary.register_task(SleepTask)
 rosemary.register_task(CheckLastIdTask)

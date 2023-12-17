@@ -166,6 +166,7 @@ class Rosemary:
 
     async def _run_task(self, id_task: int, pool: CustomSemaphore, worker: RosemaryWorker):
         error = None
+        task = None
 
         try:
             async with worker.db_connector.get_session() as session:
@@ -180,7 +181,7 @@ class Rosemary:
                     worker.logger.exception(f'Error while getting task {id_task} from DB {e}', exc_info=e)
                     return
                 try:
-                    task: RosemaryTask = self.get_task_by_name(task_db.name)()
+                    task = self.get_task_by_name(task_db.name)()
                 except KeyError:
                     error = 'Task not registered in rosemary!'
                 except Exception as e:
@@ -210,7 +211,7 @@ class Rosemary:
                     task_db.task_return = str(result_task)
                     await session.commit()
                     will_not_repeat = True
-            if will_not_repeat and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
+            if will_not_repeat and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
                 await task.create(data=task_db.data, session=session, check_exist_repeatable=False)
         except Exception as e:
             worker.logger.exception(f'Error while creating session for DB {e}. Task: {id_task}', exc_info=e)
