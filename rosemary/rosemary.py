@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import signal
 import threading
 import traceback
@@ -59,12 +58,12 @@ class Rosemary:
             db_password: str,
             db_name_db: str,
             db_schema: str = 'public',
-            # logger: Logger | None = None,
+            logger: Logger | None = None,
             max_tasks_per_worker: int = 50,
             workers: int = 1,
     ):
         self._max_task_semaphore: int = max_tasks_per_worker
-        self.logger: Logger = get_logger('Main')
+        self.logger: Logger = logger or get_logger('Main')
         self.__shutdown_requested: bool = False
         self._count_workers: int = workers
 

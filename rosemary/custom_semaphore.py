@@ -5,7 +5,7 @@ class CustomSemaphore(asyncio.Semaphore):
     def __init__(self, value):
         super().__init__(value)
         self._initial_value = value
-        self._current_value = value  # Счётчик для отслеживания текущего значения
+        self._current_value = value
 
     def tasks_remaining(self):
         return self._current_value

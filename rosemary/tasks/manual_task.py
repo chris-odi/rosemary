@@ -1,7 +1,6 @@
 import datetime
 from abc import ABC
 
-from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
