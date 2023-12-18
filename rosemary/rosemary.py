@@ -52,6 +52,7 @@ class Rosemary:
             db_user: str,
             db_password: str,
             db_name_db: str,
+            db_schema: str = 'public',
             # logger: Logger | None = None,
             max_tasks_per_worker: int = 50,
             workers: int = 1,
@@ -69,10 +70,16 @@ class Rosemary:
         self.__db_port = db_port
         self.__db_user = db_user
         self.__db_password = db_password
-        self.__db_name_db = db_name_db
+        self.__db_name = db_name_db
+        self.__db_schema = db_schema
 
         self.db_connector = DBConnector(
-            self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
+            host=self.__db_host,
+            db=self.__db_name,
+            user=self.__db_user,
+            password=self.__db_password,
+            port=self.__db_port,
+            schema=self.__db_schema,
         )
 
     def register_task(self, task: Type[InterfaceRosemaryTask]):
@@ -135,7 +142,12 @@ class Rosemary:
 
     def _run_migration(self):
         alembic_upgrade_head(
-            self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
+            host=self.__db_host,
+            db=self.__db_name,
+            user=self.__db_user,
+            password=self.__db_password,
+            port=self.__db_port,
+            schema=self.__db_schema,
         )
 
     def _run_looping(self, worker: RosemaryWorker):
@@ -146,7 +158,7 @@ class Rosemary:
 
     async def _looping(self, worker: RosemaryWorker):
         worker.db_connector = DBConnector(
-            self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
+            self.__db_host, self.__db_name, self.__db_user, self.__db_password, self.__db_port
         )
         async with worker.db_connector.get_session() as session:
             await worker.register_in_db(session)
