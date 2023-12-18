@@ -1,17 +1,28 @@
-Install with pip:
+1. **Step 1: Install psycopg2**
 
-`pip install rosemary`
+    `pip3 install psycopg2==2.9.9`
+    
+    OR
+    
+    `pip3 install psycopg2-binary==2.9.9`
 
-OR
+    Install with poetry:
 
-`pip3 install rosemary`
+    `poetry add psycopg2=2.9.9`
+    
+    OR
 
-Install with poetry:
+    `poetry add psycopg2-binary=2.9.9`
 
-`poetry add rosemary`
+2. **Step 2: Install with pip:**
 
+    `pip3 install rosemary`
+    
+    Install with poetry:
+    
+    `poetry add rosemary`
 
-Requirements:
+**Requirements:**
 * python = "^3.11"
 * pydantic = "^2.5.2"
 * sqlalchemy = "^2.0.23"
@@ -22,4 +33,4 @@ Requirements:
 * setuptools = "^69.0.2"
 * alembic = "^1.13.0"
 * pydantic-settings = "^2.1.0"
-* psycopg2-binary = "^2.9.9"
+* psycopg2-binary = "^2.9.9" or psycopg2 = "^2.9.9"
