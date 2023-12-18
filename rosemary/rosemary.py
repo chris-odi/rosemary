@@ -158,7 +158,7 @@ class Rosemary:
 
     async def _looping(self, worker: RosemaryWorker):
         worker.db_connector = DBConnector(
-            self.__db_host, self.__db_name, self.__db_user, self.__db_password, self.__db_port
+            self.__db_host, self.__db_name, self.__db_user, self.__db_password, self.__db_port, self.__db_schema
         )
         async with worker.db_connector.get_session() as session:
             await worker.register_in_db(session)
