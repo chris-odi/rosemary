@@ -1,1 +1,4 @@
 /.idea
+/data/
+docker-compose.yaml
+Dockerfile
