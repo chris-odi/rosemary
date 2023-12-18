@@ -5,7 +5,7 @@ import threading
 import traceback
 from abc import ABC
 from logging import Logger
-from typing import Type, Sequence
+from typing import Type, Sequence, Iterable
 
 from sqlalchemy import select, update, case, or_, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,21 +25,27 @@ from rosemary.tasks.task_interface import InterfaceRosemaryTask
 class Rosemary:
 
     @property
-    def RepeatableTask(self):
+    def RepeatableTask(self) -> Type[InterfaceRepeatableTask]:
         session = self.db_connector.get_session
 
         class RepeatableTask(InterfaceRepeatableTask, ABC):
-            def get_session(self) -> AsyncSession:
+            @classmethod
+            def get_session(cls) -> AsyncSession:
                 return session()
+
+            @classmethod
+            async def run(self, data):
+                ...
 
         return RepeatableTask
 
     @property
-    def ManualTask(self):
+    def ManualTask(self) -> Type[InterfaceManualTask]:
         session = self.db_connector.get_session
 
         class ManualTask(InterfaceManualTask, ABC):
-            def get_session(self) -> AsyncSession:
+            @classmethod
+            def get_session(cls) -> AsyncSession:
                 return session()
 
         return ManualTask
@@ -178,7 +184,11 @@ class Rosemary:
                     await asyncio.sleep(2)
                 await asyncio.sleep(1)
 
-    def run(self):
+    @classmethod
+    async def _create_tasks(cls, tasks: Iterable[Type[InterfaceRepeatableTask]]):
+        await asyncio.gather(*tasks)
+
+    def run(self, repeat_tasks: Iterable[Type[InterfaceRepeatableTask]] | None = None):
         workers_threads = []
         self._run_migration()
         for _ in range(self._count_workers):
@@ -187,6 +197,10 @@ class Rosemary:
             worker.logger.info(f'Worker {worker.uuid} registered!')
             thread = threading.Thread(target=self._run_looping, args=(worker,))
             workers_threads.append(thread)
+        if repeat_tasks:
+            self.logger.info('Registration repeatable tasks')
+            asyncio.run(self._create_tasks(repeat_tasks))
+            self.logger.info('Registration repeatable tasks completed')
         for thread in workers_threads:
             thread.start()
         for thread in workers_threads:
@@ -194,12 +208,11 @@ class Rosemary:
         self.logger.error('Rosemary is stopped because all workers is stopped!')
 
     async def _run_task(self, id_task: int, pool: CustomSemaphore, worker: RosemaryWorker):
-        error = None
-        task = None
+        error: str | None = None
+        task: InterfaceRosemaryTask | None = None
 
         try:
             async with worker.db_connector.get_session() as session:
-                # async with session.begin():
                 try:
                     query = select(RosemaryTaskModel).where(
                         RosemaryTaskModel.id == id_task
@@ -229,7 +242,7 @@ class Rosemary:
                         else:
                             error = f'{e.__class__.__name__}: {repr(e)}. Traceback: {traceback.print_tb(e.__traceback__)}'
                         worker.logger.info(f'Error task "{task_db.name}" id: "{task_db.id}" '
-                                           f'with data {task_db.data} with result: {error}')
+                                           f'with data {task_db.data} with error: {error}')
                 if error:
                     task_db.error = error
                     if task_db.retry >= task_db.max_retry:
@@ -238,14 +251,14 @@ class Rosemary:
                     else:
                         will_not_repeat = False
                         task_db.status = StatusTaskRosemary.FAILED.value
-                        task_db.delay = datetime.datetime.utcnow() + datetime.timedelta(seconds=task.delay_retry)
+                        task_db.delay = func.now() + task.delay_retry
                 else:
                     task_db.status = StatusTaskRosemary.FINISHED.value
                     task_db.task_return = str(result_task)
                     will_not_repeat = True
                 await session.commit()
             if will_not_repeat and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
-                await task.create(data=task_db.data, session=session, check_exist_repeatable=False)
+                await task.create(data=task_db.data, session=session, delay=task.delay_retry + func.now())
         except Exception as e:
             worker.logger.exception(f'Error while creating session for DB {e}. Task: {id_task}', exc_info=e)
         finally:

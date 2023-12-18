@@ -1,13 +1,11 @@
 import contextlib
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy import MetaData
-
 
 
 class DBConnector:
     def __init__(
-            self, host: str, db: str, user: str, password: str, port: int | str = 5432, schema: str = 'public'
+            self, host: str, db: str, user: str, password: str, port: int | str, schema: str
     ):
         self.__connect_string = self._build_asyncpg_connect_string(host, db, user, password, port)
         self.engine = create_async_engine(

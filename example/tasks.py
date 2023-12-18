@@ -38,7 +38,7 @@ class WorkWithDBTask(rosemary.ManualTask):
             RosemaryTaskModel.name == self.get_name()
         ).order_by(RosemaryTaskModel.id)
         result = await session.execute(query)
-        task_db: RosemaryTaskModel = result.scalars().all()
+        task_db: list[RosemaryTaskModel] = result.scalars().all()
         result = task_db[-1].id
         logger.info(f'Task ID GET: {result}')
         return result
@@ -49,7 +49,7 @@ class RepeatableTaskModel(BaseModel):
 
 
 class ErrorTask(rosemary.ManualTask):
-
+    delay_retry = 100
     async def run(self, data):
         1/0
 

@@ -1,6 +1,8 @@
+import datetime
 from abc import ABC
 
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.constants import TypeTaskRosemary
@@ -13,28 +15,15 @@ class InterfaceManualTask(InterfaceRosemaryTask, ABC):
     type_task = TypeTaskRosemary.MANUAL
     timeout = 30
 
-    async def _create_task(self, data: dict, session: AsyncSession, *args, **kwargs):
+    async def _create_task(self, data: dict, session: AsyncSession, delay: datetime.datetime):
         new_task = RosemaryTaskModel(
             data=data,
             name=self.__class__.__name__,
             type_task=self.type_task,
             max_retry=self.max_retry,
-            timeout=self.timeout
+            timeout=self.timeout,
+            delay=func.now() if delay is None else delay
         )
         session.add(new_task)
         await session.commit()
         return new_task.id
-
-    async def create(
-            self, *, data: dict | BaseModel | None = None,
-            session: AsyncSession | None = None,
-            check_exist_repeatable: bool = True
-    ):
-        data = self._prepare_data_to_db(data)
-
-        if session is None:
-            async with self.get_session() as session:
-                return await self._create_task(data, session, check_exist_repeatable)
-        else:
-            return await self._create_task(data, session, check_exist_repeatable)
-
