@@ -25,6 +25,7 @@ class RosemaryTaskModel(Base):
     task_return: str = Column(String, default=None)
     worker: UUID = Column(UUID_DB, default=None)
     timeout: int = Column(Integer, default=30, nullable=False)
+    # delay = Column(DateTime, default=datetime.utcnow(), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

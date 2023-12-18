@@ -1,18 +1,15 @@
 import asyncio
-import json
+import inspect
 from abc import abstractmethod, ABC
 
 from pydantic import BaseModel
 from pydantic.v1 import BaseModel as BaseModel_V1
-from sqlalchemy import select, and_, String, cast
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.constants import TypeTaskRosemary, StatusTaskRosemary
-from rosemary.db.models import RosemaryTaskModel
+from rosemary.constants import TypeTaskRosemary
 
 
-class RosemaryTask(ABC):
+class InterfaceRosemaryTask(ABC):
     max_retry = 3
     type_task = TypeTaskRosemary.NOT_SETUP
     timeout = 30
@@ -48,37 +45,9 @@ class RosemaryTask(ABC):
     def get_type(self) -> str:
         return self._type_task
 
+    @abstractmethod
     async def _create_task(self, data: dict, session: AsyncSession, check_exist_repeatable: bool = True):
-        if self.get_type() == TypeTaskRosemary.REPEATABLE.value and check_exist_repeatable:
-            for _ in range(self.timeout + 10):
-                await asyncio.sleep(1)
-                query = select(RosemaryTaskModel).where(and_(
-                    RosemaryTaskModel.name == self.get_name(),
-                    cast(RosemaryTaskModel.data, String) == json.dumps(data)
-                )).where(
-                    RosemaryTaskModel.status.in_([
-                        StatusTaskRosemary.IN_PROGRESS.value,
-                        StatusTaskRosemary.FAILED.value,
-                        StatusTaskRosemary.NEW.value,
-                    ])
-                )
-                result = await session.execute(query)
-                try:
-                    task_db: RosemaryTaskModel = result.scalars().one()
-                except NoResultFound:
-                    continue
-                if task_db:
-                    return task_db.id
-        new_task = RosemaryTaskModel(
-            data=data,
-            name=self.__class__.__name__,
-            type_task=self.type_task,
-            max_retry=self.max_retry,
-            timeout=self.timeout
-        )
-        session.add(new_task)
-        await session.commit()
-        return new_task.id
+        ...
 
     def prepare_data_for_run(self, data: dict):
         return data
@@ -133,6 +102,17 @@ class RosemaryTask(ABC):
     #             asyncio.create_task(self._create_task(data, session, check_exist_repeatable))
     #     else:
     #         asyncio.create_task(self._create_task(data, session, check_exist_repeatable))
+
+    async def prepare_and_run(self, data: dict | None, session: AsyncSession | None):
+        params = inspect.signature(self.run)
+        kwargs = {}
+        for param in params.parameters.keys():
+            if param == 'data':
+                prepared_data = self.prepare_data_for_run(data)
+                kwargs['data'] = prepared_data
+            if param == 'session':
+                kwargs['session'] = session
+        return await self.run(**kwargs)
 
     @abstractmethod
     def get_session(self) -> AsyncSession:

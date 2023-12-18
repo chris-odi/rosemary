@@ -16,20 +16,32 @@ from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryTaskModel
 from rosemary.logger import get_logger
 from rosemary.rosemary_worker import RosemaryWorker
-from rosemary.task_inreface import RosemaryTask
+from rosemary.tasks.manual_task import InterfaceManualTask
+from rosemary.tasks.repeatable_task import InterfaceRepeatableTask
+from rosemary.tasks.task_interface import InterfaceRosemaryTask
 
 
 class Rosemary:
 
     @property
-    def Task(self):
+    def RepeatableTask(self):
         session = self.db_connector.get_session
 
-        class Task(RosemaryTask, ABC):
+        class RepeatableTask(InterfaceRepeatableTask, ABC):
             def get_session(self) -> AsyncSession:
                 return session()
 
-        return Task
+        return RepeatableTask
+
+    @property
+    def ManualTask(self):
+        session = self.db_connector.get_session
+
+        class ManualTask(InterfaceManualTask, ABC):
+            def get_session(self) -> AsyncSession:
+                return session()
+
+        return ManualTask
 
     def __init__(
             self,
@@ -62,7 +74,7 @@ class Rosemary:
             self.__db_host, self.__db_name_db, self.__db_user, self.__db_password, self.__db_port
         )
 
-    def register_task(self, task: Type[RosemaryTask]):
+    def register_task(self, task: Type[InterfaceRosemaryTask]):
         ex_task = task()
         self.logger.info(f'Registered {ex_task.get_type()} task "{ex_task.get_name()}"')
         self._registered_tasks[ex_task.get_name()] = task
@@ -188,15 +200,19 @@ class Rosemary:
                     error = f'{e.__class__.__name__}: {repr(e)}. Traceback: {traceback.print_tb(e.__traceback__)}'
                 else:
                     try:
+                        worker.logger.info(f'Start task "{task_db.name}" id: "{task_db.id}" with data {task_db.data}')
                         result_task = await asyncio.wait_for(
-                            task.run(task.prepare_data_for_run(task_db.data)), timeout=task_db.timeout
+                            task.prepare_and_run(task_db.data, session), timeout=task_db.timeout
                         )
+                        worker.logger.info(f'Finished task "{task_db.name}" id: "{task_db.id}" '
+                                           f'with data {task_db.data} with result: {result_task}')
                     except Exception as e:
                         if isinstance(e, asyncio.TimeoutError):
                             error = f'TimeoutError: The task has timed out {task_db.timeout}'
                         else:
                             error = f'{e.__class__.__name__}: {repr(e)}. Traceback: {traceback.print_tb(e.__traceback__)}'
-
+                        worker.logger.info(f'Error task "{task_db.name}" id: "{task_db.id}" '
+                                           f'with data {task_db.data} with result: {error}')
                 if error:
                     task_db.error = error
                     if task_db.retry >= task_db.max_retry:

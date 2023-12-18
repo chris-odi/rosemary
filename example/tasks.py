@@ -10,7 +10,7 @@ from rosemary.constants import TypeTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
 import logging
 
-logger = logging.getLogger('Rosemary Task')
+logger = logging.getLogger('Task')
 logger.setLevel(logging.DEBUG)
 
 console_handler = logging.StreamHandler()
@@ -22,7 +22,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-class SleepTask(rosemary.Task):
+class SleepTask(rosemary.ManualTask):
     type_task = TypeTaskRosemary.MANUAL
 
     async def run(self, data):
@@ -32,24 +32,29 @@ class SleepTask(rosemary.Task):
         return f"I slept {sleep} sec"
 
 
-class CheckLastIdTask(rosemary.Task):
-    async def run(self, data):
-        async with self.get_session() as session:
-            query = select(RosemaryTaskModel).where(
-                RosemaryTaskModel.name == self.get_name()
-            )
-            result = await session.execute(query)
-            task_db: RosemaryTaskModel = result.scalars().one()
-            result = task_db.id
-            logger.info(f'Task ID GET: {result}')
-            return result
+class WorkWithDBTask(rosemary.ManualTask):
+    async def run(self, session):
+        query = select(RosemaryTaskModel).where(
+            RosemaryTaskModel.name == self.get_name()
+        ).order_by(RosemaryTaskModel.id)
+        result = await session.execute(query)
+        task_db: RosemaryTaskModel = result.scalars().all()
+        result = task_db[-1].id
+        logger.info(f'Task ID GET: {result}')
+        return result
 
 
 class RepeatableTaskModel(BaseModel):
     time_sleep: int
 
 
-class RepeatableTask(rosemary.Task):
+class ErrorTask(rosemary.ManualTask):
+
+    async def run(self, data):
+        1/0
+
+
+class RepeatableTask(rosemary.RepeatableTask):
     type_task = TypeTaskRosemary.REPEATABLE
     timeout = 10
 
