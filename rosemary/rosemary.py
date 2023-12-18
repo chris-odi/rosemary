@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import signal
 import threading
 import traceback
@@ -98,7 +99,7 @@ class Rosemary:
             self, session: AsyncSession, limit: int, worker_name: str
     ) -> Sequence[int]:
         select_query = select(RosemaryTaskModel.id).where(
-            or_(
+            and_(or_(
                 RosemaryTaskModel.status.in_([
                     StatusTaskRosemary.NEW.value,
                     StatusTaskRosemary.FAILED.value
@@ -107,8 +108,10 @@ class Rosemary:
                 and_(
                     RosemaryTaskModel.status == StatusTaskRosemary.IN_PROGRESS.value,
                     RosemaryTaskModel.updated_at < (
-                                func.now() - func.make_interval(0, 0, 0, 0, 0, 0, (RosemaryTaskModel.timeout + 10)))
+                            func.now() - func.make_interval(0, 0, 0, 0, 0, 0, (RosemaryTaskModel.timeout + 10)))
                 )
+            ),
+                RosemaryTaskModel.delay <= func.now()
             )
         ).limit(limit).with_for_update(skip_locked=True)
 
@@ -120,7 +123,9 @@ class Rosemary:
             status=StatusTaskRosemary.IN_PROGRESS.value,
             worker=worker_name,
             retry=case(
-                (RosemaryTaskModel.status.in_([StatusTaskRosemary.FAILED.value, StatusTaskRosemary.IN_PROGRESS.value]), RosemaryTaskModel.retry + 1),  # condition and result as a tuple
+                (RosemaryTaskModel.status.in_(
+                    [StatusTaskRosemary.FAILED.value, StatusTaskRosemary.IN_PROGRESS.value]
+                ), RosemaryTaskModel.retry + 1),  # condition and result as a tuple
                 else_=RosemaryTaskModel.retry
             )
         )
@@ -221,12 +226,12 @@ class Rosemary:
                     else:
                         will_not_repeat = False
                         task_db.status = StatusTaskRosemary.FAILED.value
-                    await session.commit()
+                        task_db.delay = datetime.datetime.utcnow() + datetime.timedelta(seconds=task.delay_retry)
                 else:
                     task_db.status = StatusTaskRosemary.FINISHED.value
                     task_db.task_return = str(result_task)
-                    await session.commit()
                     will_not_repeat = True
+                await session.commit()
             if will_not_repeat and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
                 await task.create(data=task_db.data, session=session, check_exist_repeatable=False)
         except Exception as e:
