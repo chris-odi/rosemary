@@ -2,3 +2,4 @@
 /data/
 docker-compose.yaml
 Dockerfile
+/test.py

@@ -10,12 +10,12 @@ from sqlalchemy import select, update, case, or_, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.constants import TypeTaskRosemary, StatusTaskRosemary
-from rosemary.custom_semaphore import CustomSemaphore
+from rosemary.core.custom_semaphore import CustomSemaphore
 from rosemary.db.alembic import alembic_upgrade_head
 from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryTaskModel
-from rosemary.logger import get_logger
-from rosemary.rosemary_worker import RosemaryWorker
+from rosemary.core.logger import get_logger
+from rosemary.worker import RosemaryWorker
 from rosemary.tasks.manual_task import InterfaceManualTask
 from rosemary.tasks.repeatable_task import InterfaceRepeatableTask
 from rosemary.tasks.task_interface import InterfaceRosemaryTask
@@ -256,7 +256,9 @@ class Rosemary:
                     task_db.task_return = str(result_task)
                     will_not_repeat = True
                 await session.commit()
-            if will_not_repeat and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
+            if (will_not_repeat
+                    and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value
+                    and self.get_task_by_name(task_db.name)):
                 await task.create(
                     data=task_db.data, session=session, delay=task.delay.get_datetime_plus_interval()
                 )

@@ -7,5 +7,5 @@ rosemary = Rosemary(
     db_user='postgres',
     db_name_db='postgres',
     max_tasks_per_worker=30,
-    workers=3,
+    workers=100,
 )

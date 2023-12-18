@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.constants import StatusWorkerRosemary
 from rosemary.db.models import RosemaryWorkerModel
-from rosemary.logger import get_logger
+from rosemary.core.logger import get_logger
 
 
 class RosemaryWorker:
