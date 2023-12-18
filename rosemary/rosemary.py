@@ -250,14 +250,16 @@ class Rosemary:
                     else:
                         will_not_repeat = False
                         task_db.status = StatusTaskRosemary.FAILED.value
-                        task_db.delay = func.now() + task.delay_retry
+                        task_db.delay = task.delay_retry.get_datetime_plus_interval()
                 else:
                     task_db.status = StatusTaskRosemary.FINISHED.value
                     task_db.task_return = str(result_task)
                     will_not_repeat = True
                 await session.commit()
             if will_not_repeat and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value:
-                await task.create(data=task_db.data, session=session, delay=task.delay_retry + func.now())
+                await task.create(
+                    data=task_db.data, session=session, delay=task.delay.get_datetime_plus_interval()
+                )
         except Exception as e:
             worker.logger.exception(f'Error while creating session for DB {e}. Task: {id_task}', exc_info=e)
         finally:

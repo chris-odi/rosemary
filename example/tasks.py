@@ -10,6 +10,8 @@ from rosemary.constants import TypeTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
 import logging
 
+from rosemary.interval import RosemaryInterval
+
 logger = logging.getLogger('Task')
 logger.setLevel(logging.DEBUG)
 
@@ -49,7 +51,7 @@ class RepeatableTaskModel(BaseModel):
 
 
 class ErrorTask(rosemary.ManualTask):
-    delay_retry = 100
+    delay_retry = RosemaryInterval(minutes=5)
     async def run(self, data):
         1/0
 

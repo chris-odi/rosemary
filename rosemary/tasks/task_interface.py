@@ -8,12 +8,13 @@ from pydantic.v1 import BaseModel as BaseModel_V1
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.constants import TypeTaskRosemary
+from rosemary.interval import RosemaryInterval
 
 
 class InterfaceRosemaryTask(ABC):
     max_retry = 3
-    delay_retry: datetime.timedelta = datetime.timedelta(seconds=5)
-    repeat_after: datetime.timedelta = datetime.timedelta(seconds=10)
+    delay_retry: RosemaryInterval = RosemaryInterval(seconds=5)
+    delay: RosemaryInterval = RosemaryInterval(seconds=10)
     type_task = TypeTaskRosemary.NOT_SETUP
     timeout = 30
 
