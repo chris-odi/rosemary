@@ -1,4 +1,3 @@
-import datetime
 import traceback
 import uuid
 from logging import Logger
@@ -6,7 +5,7 @@ from logging import Logger
 import asyncio
 from typing import Type
 
-from sqlalchemy import select, Sequence, and_, func, update, case, or_, null
+from sqlalchemy import select, Sequence, and_, func, update, case, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.tasks.constants import StatusTaskRosemary, TypeTaskRosemary
@@ -16,6 +15,7 @@ from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryWorkerModel, RosemaryTaskModel
 from rosemary.core.logger import get_logger
 from rosemary.tasks.task_interface import InterfaceRosemaryTask
+from rosemary.worker.exception import WorkerAliveException
 
 
 class RosemaryWorker:
@@ -88,9 +88,19 @@ class RosemaryWorker:
         await session.commit()
 
     async def __ping(self, session: AsyncSession):
-        self.worker_db.ping_time = func.now()
-        self.worker_db.status = StatusWorkerRosemary.WORKING.value
+        query = update(RosemaryWorkerModel).where(
+            and_(RosemaryWorkerModel.id == self.worker_db.id, RosemaryWorkerModel.status.in_(
+                [StatusWorkerRosemary.WORKING.value, StatusWorkerRosemary.CHECKING.value]
+            ))
+        ).values(
+            status=StatusWorkerRosemary.WORKING.value,
+            ping_time=func.now()
+        )
+        res = await session.execute(query)
         await session.commit()
+        if res.rowcount != 1:
+            raise WorkerAliveException()
+
 
     async def __suicide(self, session: AsyncSession):
         self.worker_db.status = StatusWorkerRosemary.KILLED.value

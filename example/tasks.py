@@ -1,6 +1,7 @@
 import asyncio
 import random
 from datetime import datetime
+from urllib import request
 
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -67,3 +68,11 @@ class RepeatableTask(rosemary.RepeatableTask):
     async def run(self, data: RepeatableTaskModel):
         await asyncio.sleep(data.time_sleep)
         logger.info(f"I repeated at {datetime.utcnow()} with params {data}")
+
+
+class SendRequestTask(rosemary.ManualTask):
+
+    async def run(self, data: dict) -> dict:
+        async with aiohttp.ClientSession() as client:
+            res = await client.get(data['url'])
+            return await res.json()
