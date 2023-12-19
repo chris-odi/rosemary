@@ -87,7 +87,7 @@ class RosemaryWorker:
         await session.commit()
 
     async def __ping(self, session: AsyncSession):
-        self.worker_db.ping_time = datetime.datetime.utcnow()
+        self.worker_db.ping_time = func.now()
         self.worker_db.status = StatusWorkerRosemary.WORKING.value
         await session.commit()
 

@@ -152,9 +152,12 @@ class Rosemary:
                     worker, thread = self._create_worker(shutdown_event=self.__shutdown_event)
                     workers_threads[thread] = worker
                     thread.start()
+            for_delete = []
             for th, worker in workers_threads.items():
                 if not th.is_alive():
                     self.logger.error(f'Worker {worker.uuid} is deleted!')
-                    workers_threads.pop(th)
-            time.sleep(6)
+                    for_delete.append(th)
+            for th in for_delete:
+                workers_threads.pop(th)
+            time.sleep(4)
         self.logger.error('Rosemary is shutdown!')

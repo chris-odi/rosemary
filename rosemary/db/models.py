@@ -1,6 +1,6 @@
-from datetime import datetime
-
-from sqlalchemy import Column, BIGINT, DateTime, JSON, Enum, String, Integer, UUID as UUID_DB, ForeignKey
+from sqlalchemy import (
+    Column, BIGINT, DateTime, JSON, Enum, String, Integer, UUID as UUID_DB, ForeignKey, func
+)
 from uuid import UUID
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -26,9 +26,9 @@ class RosemaryTaskModel(Base):
     task_return: str = Column(String, default=None)
     worker = Column(Integer, ForeignKey('rosemary_worker.id'), nullable=True)
     timeout: int = Column(Integer, default=30, nullable=False)
-    delay = Column(DateTime, default=datetime.utcnow, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    delay = Column(DateTime, default=func.now(), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
 class RosemaryWorkerModel(Base):
@@ -37,9 +37,9 @@ class RosemaryWorkerModel(Base):
     id = Column(BIGINT, primary_key=True, autoincrement=True, index=True)
     uuid: UUID = Column(UUID_DB, unique=True, nullable=False)
     status = Column(Enum(StatusWorkerRosemary), default=StatusWorkerRosemary.CHECKING, nullable=False)
-    ping_time = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    ping_time = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
 # class RosemaryCronModel(Base):
