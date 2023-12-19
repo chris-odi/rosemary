@@ -1,10 +1,10 @@
 1. **Step 1: Install psycopg2**
 
-    `poetry add psycopg2=2.9.9`
+    `poetry add psycopg2`
     
     OR
 
-    `poetry add psycopg2-binary=2.9.9`
+    `poetry add psycopg2-binary`
 
 2. **Step 2: Install rosemary:**
     
@@ -125,4 +125,4 @@ async def main():
 * alembic = "^1.13.0"
 
 **Manual install:**
-* psycopg2-binary = "^2.9.9" or psycopg2 = "^2.9.9"
+* psycopg2-binary or psycopg2
