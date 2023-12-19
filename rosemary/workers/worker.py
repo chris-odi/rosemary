@@ -85,9 +85,13 @@ class RosemaryWorker:
         session.add(self.worker_db)
         await session.commit()
 
-    async def ping(self, session: AsyncSession):
+    async def __ping(self, session: AsyncSession):
         self.worker_db.ping_time = datetime.datetime.utcnow()
         self.worker_db.status = StatusWorkerRosemary.WORKING.value
+        await session.commit()
+
+    async def __suicide(self, session: AsyncSession):
+        self.worker_db.status = StatusWorkerRosemary.KILLED.value
         await session.commit()
 
     def run(self):
@@ -103,7 +107,7 @@ class RosemaryWorker:
             self.logger.info(f'Start looping by worker {self.uuid}')
             semaphore = CustomSemaphore(self._max_task_semaphore)
             while not self.__shutdown_event.is_set():
-                await self.ping(session)
+                await self.__ping(session)
                 if semaphore.tasks_remaining() > 0:
                     ids_tasks = await self._get_new_tasks(session, semaphore.tasks_remaining())
                     for id_task in ids_tasks:
@@ -121,6 +125,7 @@ class RosemaryWorker:
                 if step >= 60 * 2:
                     step = 0
                     await self._check_deaths_workers(session)
+            await self.__suicide(session)
             self.logger.info(f'Rosemary worker {self.uuid} is shotdowned warm!')
 
     async def __check_stuck_tasks(self, session: AsyncSession):
