@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from rosemary.db.alembic import Alembic
 from rosemary.db.db import DBConnector
 from rosemary.core.logger import get_logger
-from rosemary.settings import ALEMBIC_REVISION
+from rosemary.settings import ALEMBIC_REVISION, PAUSE_FOR_CYCLE_ROSEMARY
 from rosemary.tasks.constants import TypeTaskRosemary
 from rosemary.worker.main_worker import RosemaryMainWorker
 from rosemary.worker.worker import RosemaryWorker
@@ -182,5 +182,5 @@ class Rosemary:
                 main_worker = self._create_main_worker(self.__shutdown_event)
                 main_worker.start()
 
-            time.sleep(4)
+            time.sleep(PAUSE_FOR_CYCLE_ROSEMARY)
         self.logger.error('Rosemary is shutdown!')

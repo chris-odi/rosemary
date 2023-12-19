@@ -2,6 +2,7 @@ import uuid
 from logging import Logger
 
 import asyncio
+import threading
 from sqlalchemy import update, select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,9 +12,10 @@ from rosemary.db.models import RosemaryTaskModel, RosemaryWorkerModel
 from rosemary.settings import TIME_FOR_WAITING_PING, TIME_FACTOR_TO_FIX_STATUS, PAUSE_FOR_CYCLE_MAIN_WORKER
 from rosemary.tasks.constants import StatusTaskRosemary
 from rosemary.worker.constants import StatusWorkerRosemary, ESCAPE_ERROR
+from rosemary.worker.worker_interface import RosemaryWorkerInterface
 
 
-class RosemaryMainWorker:
+class RosemaryMainWorker(RosemaryWorkerInterface):
     def __init__(
             self,
             db_host: str,
@@ -22,7 +24,7 @@ class RosemaryMainWorker:
             db_password: str,
             db_name_db: str,
             db_schema: str,
-            shutdown_event,
+            shutdown_event: threading.Event,
             logger: Logger | None = None,
     ):
         self.uuid = uuid.uuid4()
@@ -221,9 +223,3 @@ class RosemaryMainWorker:
                 await self.__check_deaths_workers(session)
 
             self.logger.info(f'Rosemary main worker {self.uuid} is shutdown warm!')
-
-    def run(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._looping())
-        loop.close()

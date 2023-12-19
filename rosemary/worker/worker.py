@@ -1,3 +1,4 @@
+import threading
 import traceback
 import uuid
 from logging import Logger
@@ -16,9 +17,10 @@ from rosemary.db.models import RosemaryWorkerModel, RosemaryTaskModel
 from rosemary.core.logger import get_logger
 from rosemary.tasks.task_interface import InterfaceRosemaryTask
 from rosemary.worker.exception import WorkerAliveException
+from rosemary.worker.worker_interface import RosemaryWorkerInterface
 
 
-class RosemaryWorker:
+class RosemaryWorker(RosemaryWorkerInterface):
     def __init__(
             self,
             db_host: str,
@@ -28,7 +30,7 @@ class RosemaryWorker:
             db_name_db: str,
             db_schema: str,
             tasks: dict[str, Type[InterfaceRosemaryTask]],
-            shutdown_event,
+            shutdown_event: threading.Event,
             logger: Logger | None = None,
             max_task_semaphore: int = 30,
     ):
@@ -101,16 +103,9 @@ class RosemaryWorker:
         if res.rowcount != 1:
             raise WorkerAliveException()
 
-
     async def __suicide(self, session: AsyncSession):
         self.worker_db.status = StatusWorkerRosemary.KILLED.value
         await session.commit()
-
-    def run(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._looping())
-        loop.close()
 
     async def _looping(self):
         async with self.db_connector.get_session() as session:
