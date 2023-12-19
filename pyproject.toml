@@ -1,21 +1,21 @@
 [tool.poetry]
 name = "rosemary"
-version = "1.7.17"
+version = "1.7.18"
 description = ""
 authors = ["Chris Odi <chris.odi76@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pydantic = "^2.5.2"
-sqlalchemy = "^2.0.23"
+pydantic = "^2"
+sqlalchemy = "^2"
 asyncpg = "^0.29.0"
-asyncio = "^3.4.3"
-logger = "^1.4"
-importlib = "^1.0.4"
-setuptools = "^69.0.2"
-alembic = "^1.13.0"
-greenlet = "^3.0.2"
+asyncio = "^3"
+logger = "^1"
+importlib = "^1"
+setuptools = "^69"
+alembic = "^1"
+greenlet = "^3"
 
 
 [build-system]

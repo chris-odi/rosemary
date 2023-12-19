@@ -115,14 +115,15 @@ async def main():
 
 **Requirements:**
 * python = "^3.11"
-* pydantic = "^2.5.2"
-* sqlalchemy = "^2.0.23"
+* pydantic = "^2"
+* sqlalchemy = "^2"
 * asyncpg = "^0.29.0"
-* asyncio = "^3.4.3"
-* logger = "^1.4"
-* importlib = "^1.0.4"
-* setuptools = "^69.0.2"
-* alembic = "^1.13.0"
+* asyncio = "^3"
+* logger = "^1"
+* importlib = "^1"
+* setuptools = "^69"
+* alembic = "^1"
+* greenlet = "^3"
 
 **Manual install:**
 * psycopg2-binary or psycopg2
