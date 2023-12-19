@@ -53,7 +53,8 @@ class ErrorTask(rosemary.ManualTask):
     delay_retry = RosemaryInterval(seconds=35)
     max_retry = 50
     async def run(self, data):
-        1/0
+        # 1/0
+        return 'mew'
 
 
 class RepeatableTask(rosemary.RepeatableTask):
