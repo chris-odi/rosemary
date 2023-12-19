@@ -98,8 +98,21 @@ rosemary.register_task(ExampleTask)
 if __name__ == '__main__':
     # Run your rosemary
     rosemary.run()
+```
+
+4. Implement your task:
+```python
+from task import SleepTask
+
+
+async def main():
+   task_id = await SleepTask().create()
+   print(f'You create task {task_id}')
+   another_task_id = await SleepTask().create(data={123: 456, 'example': 'example123'})
+   print(f'You create another task {another_task_id} with params')
 
 ```
+
 **Requirements:**
 * python = "^3.11"
 * pydantic = "^2.5.2"
