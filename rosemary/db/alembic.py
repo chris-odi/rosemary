@@ -17,12 +17,11 @@ class Alembic:
         __connect_string = f'postgresql://{user}:{password}@{host}:{port}/{db}?options=-csearch_path={schema}'
         __root_dir = Path(__file__).parent.parent.parent
         __alembic_dir = __root_dir / 'rosemary/alembic'
-        alembic_logger.info(__alembic_dir)
+        # alembic_logger.info(__alembic_dir)
 
         self.__alembic_cfg = Config()
         self.__alembic_cfg.set_main_option("sqlalchemy.url", __connect_string)
         self.__alembic_cfg.set_main_option("script_location", str(__alembic_dir))
 
-
-    def upgrade(self, revision):
+    def upgrade(self, revision: str):  # head
         command.upgrade(self.__alembic_cfg, revision=revision)
