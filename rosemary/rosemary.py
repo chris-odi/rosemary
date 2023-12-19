@@ -14,6 +14,7 @@ from rosemary.db.db import DBConnector
 from rosemary.core.logger import get_logger
 from rosemary.settings import ALEMBIC_REVISION
 from rosemary.tasks.constants import TypeTaskRosemary
+from rosemary.worker.main_worker import RosemaryMainWorker
 from rosemary.worker.worker import RosemaryWorker
 from rosemary.tasks.manual_task import InterfaceManualTask
 from rosemary.tasks.repeatable_task import InterfaceRepeatableTask
@@ -138,6 +139,20 @@ class Rosemary:
         thread = threading.Thread(target=worker.run)
         return worker, thread
 
+    def _create_main_worker(self, shutdown_event):
+        main_worker = RosemaryMainWorker(
+            db_user=self.__db_user,
+            db_password=self.__db_password,
+            db_name_db=self.__db_name,
+            db_host=self.__db_host,
+            db_schema=self.__db_schema,
+            db_port=self.__db_port,
+            shutdown_event=shutdown_event,
+        )
+        main_worker.logger.info(f'Worker created!')
+        thread = threading.Thread(target=main_worker.run)
+        return thread
+
     def run(self, repeat_tasks: Iterable[Type[InterfaceRepeatableTask]] | None = None):
         workers_threads = {}
         self._run_migration()
@@ -145,6 +160,9 @@ class Rosemary:
             self.logger.info('Registration repeatable tasks')
             asyncio.run(self._create_tasks(repeat_tasks))
             self.logger.info('Registration repeatable tasks completed')
+
+        main_worker = self._create_main_worker(self.__shutdown_event)
+        main_worker.start()
 
         while not self.__shutdown_requested:
             if len(workers_threads) < self._count_workers:
@@ -159,5 +177,10 @@ class Rosemary:
                     for_delete.append(th)
             for th in for_delete:
                 workers_threads.pop(th)
+
+            if not main_worker.is_alive():
+                main_worker = self._create_main_worker(self.__shutdown_event)
+                main_worker.start()
+
             time.sleep(4)
         self.logger.error('Rosemary is shutdown!')

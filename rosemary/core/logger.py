@@ -2,7 +2,7 @@ import logging
 
 
 def get_logger(name_worker: str):
-    logger = logging.getLogger(f'Rosemary Task -> {name_worker}')
+    logger = logging.getLogger(f'Rosemary -> {name_worker}')
     if logger.handlers:
         return logger
     logger.setLevel(logging.INFO)
@@ -10,7 +10,8 @@ def get_logger(name_worker: str):
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        '[%(asctime)s] %(name)s >%(levelname)s %(message)s')
     console_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)
