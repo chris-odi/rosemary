@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rosemary"
-version = "1.7.2"
+version = "1.7.3"
 description = ""
 authors = ["Chris Odi <chris.odi76@gmail.com>"]
 readme = "README.md"
