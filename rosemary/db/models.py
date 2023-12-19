@@ -5,7 +5,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.declarative import declarative_base
 
-from rosemary.constants import StatusTaskRosemary, TypeTaskRosemary, StatusWorkerRosemary
+from rosemary.tasks.constants import StatusTaskRosemary, TypeTaskRosemary
+from rosemary.worker.constants import StatusWorkerRosemary
 
 
 Base = declarative_base()

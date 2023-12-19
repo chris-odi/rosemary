@@ -9,7 +9,8 @@ from typing import Type
 from sqlalchemy import select, Sequence, and_, func, update, case, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.constants import StatusWorkerRosemary, StatusTaskRosemary, TypeTaskRosemary
+from rosemary.tasks.constants import StatusTaskRosemary, TypeTaskRosemary
+from rosemary.worker.constants import StatusWorkerRosemary
 from rosemary.core.custom_semaphore import CustomSemaphore
 from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryWorkerModel, RosemaryTaskModel
@@ -125,8 +126,12 @@ class RosemaryWorker:
                 if step >= 60 * 2:
                     step = 0
                     await self._check_deaths_workers(session)
+
+            self.logger.info(f'Rosemary worker {self.uuid} is shutdowning warm...')
+            while semaphore.tasks_remaining() != self._max_task_semaphore:
+                await asyncio.sleep(1)
             await self.__suicide(session)
-            self.logger.info(f'Rosemary worker {self.uuid} is shotdowned warm!')
+            self.logger.info(f'Rosemary worker {self.uuid} is shutdown warm!')
 
     async def __check_stuck_tasks(self, session: AsyncSession):
         select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(

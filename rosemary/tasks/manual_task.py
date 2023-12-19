@@ -4,8 +4,8 @@ from abc import ABC
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.constants import TypeTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
+from rosemary.tasks.constants import TypeTaskRosemary
 from rosemary.tasks.task_interface import InterfaceRosemaryTask
 
 

@@ -6,11 +6,11 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from example.rosemary_config import rosemary
-from rosemary.constants import TypeTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
 import logging
 
 from rosemary.interval import RosemaryInterval
+from rosemary.tasks.constants import TypeTaskRosemary
 
 logger = logging.getLogger('Task')
 logger.setLevel(logging.DEBUG)

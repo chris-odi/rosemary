@@ -5,8 +5,8 @@ from abc import ABC
 from sqlalchemy import select, and_, String, cast, Sequence, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.constants import TypeTaskRosemary, StatusTaskRosemary
 from rosemary.db.models import RosemaryTaskModel
+from rosemary.tasks.constants import TypeTaskRosemary, StatusTaskRosemary
 from rosemary.tasks.task_interface import InterfaceRosemaryTask
 
 

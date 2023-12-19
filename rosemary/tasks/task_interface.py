@@ -6,9 +6,8 @@ from abc import abstractmethod, ABC
 from pydantic import BaseModel
 from pydantic.v1 import BaseModel as BaseModel_V1
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from rosemary.constants import TypeTaskRosemary
 from rosemary.interval import RosemaryInterval
+from rosemary.tasks.constants import TypeTaskRosemary
 
 
 class InterfaceRosemaryTask(ABC):

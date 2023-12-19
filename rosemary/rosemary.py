@@ -9,11 +9,12 @@ from typing import Type, Iterable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rosemary.constants import TypeTaskRosemary
-from rosemary.db.alembic import alembic_upgrade_head
+from rosemary.db.alembic import Alembic
 from rosemary.db.db import DBConnector
 from rosemary.core.logger import get_logger
-from rosemary.workers.worker import RosemaryWorker
+from rosemary.settings import ALEMBIC_REVISION
+from rosemary.tasks.constants import TypeTaskRosemary
+from rosemary.worker.worker import RosemaryWorker
 from rosemary.tasks.manual_task import InterfaceManualTask
 from rosemary.tasks.repeatable_task import InterfaceRepeatableTask
 from rosemary.tasks.task_interface import InterfaceRosemaryTask
@@ -88,7 +89,7 @@ class Rosemary:
         self.__shutdown_event = threading.Event()
 
     def __handle_signal(self, *args, **kwargs):
-        self.logger.error(f"Rosemary is shotdowning warm...")
+        self.logger.error(f"Rosemary is shutdowning warm...")
         self.__shutdown_requested = True
         self.__shutdown_event.set()
 
@@ -105,7 +106,8 @@ class Rosemary:
             self._repeatable_tasks.append(task)
 
     def _run_migration(self):
-        alembic_upgrade_head(
+        self.logger.info('Migration is running...')
+        alembic = Alembic(
             host=self.__db_host,
             db=self.__db_name,
             user=self.__db_user,
@@ -113,6 +115,8 @@ class Rosemary:
             port=self.__db_port,
             schema=self.__db_schema,
         )
+        alembic.upgrade(ALEMBIC_REVISION)
+        self.logger.info('Migration finished!')
 
     @classmethod
     async def _create_tasks(cls, tasks: Iterable[Type[InterfaceRepeatableTask]]):
@@ -153,4 +157,4 @@ class Rosemary:
                     self.logger.error(f'Worker {worker.uuid} is deleted!')
                     workers_threads.pop(th)
             time.sleep(6)
-        self.logger.error('Rosemary is shotdowned!')
+        self.logger.error('Rosemary is shutdown!')
