@@ -53,7 +53,8 @@ class InterfaceRosemaryTask(ABC):
         raise TypeError(f'Incorrect type of data: "{type(data)}"')
 
     async def create(
-            self, *, data: dict | BaseModel | None = None,
+            self,
+            data: dict | BaseModel | None = None,
             session: AsyncSession | None = None,
             delay: datetime.datetime | None = None
     ):

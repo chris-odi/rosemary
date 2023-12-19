@@ -62,7 +62,7 @@ class RosemaryWorker:
                     RosemaryTaskModel.worker == self.worker_db.id,
                 )
             )
-        ).limit(limit).with_for_update(skip_locked=True)
+        ).limit(limit).with_for_update(skip_locked=True).order_by(RosemaryTaskModel.id)
 
         res = await session.execute(select_query)
         ids_to_update = res.scalars().all()
@@ -196,12 +196,11 @@ class RosemaryWorker:
         select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(
             and_(
                 RosemaryTaskModel.status.in_([
-                    StatusTaskRosemary.IN_PROGRESS.value,
                     StatusTaskRosemary.FAILED.value,
                     StatusTaskRosemary.NEW.value,
                 ]),
                 RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
-                (RosemaryTaskModel.retry + 1) >= RosemaryTaskModel.max_retry
+                RosemaryTaskModel.retry >= RosemaryTaskModel.max_retry
             )
         ).with_for_update(skip_locked=True)
         res = await session.execute(select_query)
@@ -211,7 +210,6 @@ class RosemaryWorker:
             RosemaryTaskModel.id.in_(ids_to_update)
         ).values(
             status=StatusTaskRosemary.FATAL.value,
-            retry=RosemaryTaskModel.retry + 1,
             worker=self.worker_db.id
         )
         await session.execute(update_status)
@@ -220,12 +218,11 @@ class RosemaryWorker:
         select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(
             and_(
                 RosemaryTaskModel.status.in_([
-                    StatusTaskRosemary.IN_PROGRESS.value,
                     StatusTaskRosemary.FAILED.value,
                     StatusTaskRosemary.NEW.value,
                 ]),
                 RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
-                (RosemaryTaskModel.retry + 1) < RosemaryTaskModel.max_retry
+                RosemaryTaskModel.retry < RosemaryTaskModel.max_retry
             )
         ).with_for_update(skip_locked=True)
 
@@ -235,8 +232,50 @@ class RosemaryWorker:
             RosemaryTaskModel.id.in_(ids_to_update)
         ).values(
             status=StatusTaskRosemary.FAILED.value,
-            retry=RosemaryTaskModel.retry + 1,
             worker=self.worker_db.id
+        )
+        await session.execute(update_status)
+        await session.commit()
+
+        # IN PROGRESS
+        error = 'Escaped in status in progress'
+        select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(
+            and_(
+                RosemaryTaskModel.status == StatusTaskRosemary.IN_PROGRESS.value,
+                RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
+                RosemaryTaskModel.retry < RosemaryTaskModel.max_retry
+            )
+        ).with_for_update(skip_locked=True)
+        res = await session.execute(select_query)
+        ids_to_update = res.scalars().all()
+        update_status = update(RosemaryTaskModel).where(
+            RosemaryTaskModel.id.in_(ids_to_update)
+        ).values(
+            status=StatusTaskRosemary.FAILED.value,
+            worker=self.worker_db.id,
+            retry=RosemaryTaskModel.retry + 1,
+            error=error
+        )
+        await session.execute(update_status)
+        await session.commit()
+
+        select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(
+            and_(
+                RosemaryTaskModel.status == StatusTaskRosemary.IN_PROGRESS.value,
+                RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
+                RosemaryTaskModel.retry >= RosemaryTaskModel.max_retry
+            )
+        ).with_for_update(skip_locked=True)
+        res = await session.execute(select_query)
+        ids_to_update = res.scalars().all()
+
+        update_status = update(RosemaryTaskModel).where(
+            RosemaryTaskModel.id.in_(ids_to_update)
+        ).values(
+            status=StatusTaskRosemary.FATAL.value,
+            worker=self.worker_db.id,
+            retry=RosemaryTaskModel.retry + 1,
+            error=error
         )
         await session.execute(update_status)
         await session.commit()

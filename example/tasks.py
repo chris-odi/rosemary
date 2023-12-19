@@ -31,7 +31,6 @@ class SleepTask(rosemary.ManualTask):
     async def run(self, data):
         sleep = random.randint(1, 10)
         await asyncio.sleep(sleep)
-        logger.error(f'Test {datetime.utcnow()}. Slept: {sleep}')
         return f"I slept {sleep} sec"
 
 
@@ -43,7 +42,6 @@ class WorkWithDBTask(rosemary.ManualTask):
         result = await session.execute(query)
         task_db: list[RosemaryTaskModel] = result.scalars().all()
         result = task_db[-1].id
-        logger.info(f'Task ID GET: {result}')
         return result
 
 
