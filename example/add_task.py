@@ -15,8 +15,8 @@ async def main():
         a = A(x=random.randint(1, 300))
         task = await SleepTask().create(data=a)
         print(task)
-        # task = await ErrorTask().create(data={random.randint(1, 100): random.randint(1, 100)})
-        # print(task)
+        task = await ErrorTask().create(data={random.randint(1, 100): random.randint(1, 100)})
+        print(task)
         task = await WorkWithDBTask().create()
         print(task)
 

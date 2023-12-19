@@ -96,7 +96,6 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
         ).values(
             status=StatusTaskRosemary.FAILED.value,
             worker=None,
-            retry=RosemaryTaskModel.retry + 1,
             error=ESCAPE_ERROR
         )
         await session.execute(update_status)
@@ -117,7 +116,6 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
         ).values(
             status=StatusTaskRosemary.FATAL.value,
             worker=None,
-            retry=RosemaryTaskModel.retry + 1,
             error=ESCAPE_ERROR
         )
         await session.execute(update_status)
@@ -172,7 +170,7 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
                     ),
                     RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
                 ),
-                (RosemaryTaskModel.retry + 1) >= RosemaryTaskModel.max_retry
+                RosemaryTaskModel.retry >= RosemaryTaskModel.max_retry
             )
         ).with_for_update(skip_locked=True)
         res = await session.execute(select_query)
@@ -181,9 +179,7 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
             RosemaryTaskModel.id.in_(ids_to_update)
         ).values(
             status=StatusTaskRosemary.FATAL.value,
-            retry=RosemaryTaskModel.retry + 1,
             error=ESCAPE_ERROR,
-            # worker=None
         )
         await session.execute(update_status)
         await session.commit()
@@ -197,7 +193,7 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
                     ),
                     RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
                 ),
-                (RosemaryTaskModel.retry + 1) < RosemaryTaskModel.max_retry
+                RosemaryTaskModel.retry < RosemaryTaskModel.max_retry
             )
         ).with_for_update(skip_locked=True)
         res = await session.execute(select_query)
@@ -206,9 +202,7 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
             RosemaryTaskModel.id.in_(ids_to_update)
         ).values(
             status=StatusTaskRosemary.FAILED.value,
-            retry=RosemaryTaskModel.retry + 1,
             error=ESCAPE_ERROR,
-            # worker=None
         )
         await session.execute(update_status)
         await session.commit()
