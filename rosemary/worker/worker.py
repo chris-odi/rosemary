@@ -6,7 +6,7 @@ from logging import Logger
 import asyncio
 from typing import Type
 
-from sqlalchemy import select, Sequence, and_, func, update, case, or_
+from sqlalchemy import select, Sequence, and_, func, update, case, or_, null
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rosemary.tasks.constants import StatusTaskRosemary, TypeTaskRosemary
@@ -57,9 +57,10 @@ class RosemaryWorker:
                     StatusTaskRosemary.FAILED.value
                 ]),
                 RosemaryTaskModel.delay <= func.now(),
-                RosemaryTaskModel.worker.in_([
-                    self.worker_db.id, None
-                ])
+                or_(
+                    RosemaryTaskModel.worker == None,
+                    RosemaryTaskModel.worker == self.worker_db.id,
+                )
             )
         ).limit(limit).with_for_update(skip_locked=True)
 
@@ -121,10 +122,9 @@ class RosemaryWorker:
                 step += 1
 
                 if step >= 60 * 1:
-                    await self.__check_stuck_tasks(session)
-
-                if step >= 60 * 2:
                     step = 0
+                    await self.__check_stuck_tasks(session)
+                    await self.__check_stuck_tasks_by_other_workers(session)
                     await self._check_deaths_workers(session)
 
             self.logger.info(f'Rosemary worker {self.uuid} is shutdowning warm...')
@@ -178,6 +178,55 @@ class RosemaryWorker:
         ).values(
             status=StatusTaskRosemary.FAILED.value,
             retry=RosemaryTaskModel.retry + 1
+        )
+        await session.execute(update_status)
+        await session.commit()
+
+    async def __check_stuck_tasks_by_other_workers(self, session: AsyncSession):
+        select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(
+            and_(
+                RosemaryTaskModel.status.in_([
+                    StatusTaskRosemary.IN_PROGRESS.value,
+                    StatusTaskRosemary.FAILED.value,
+                    StatusTaskRosemary.NEW.value,
+                ]),
+                RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
+                (RosemaryTaskModel.retry + 1) >= RosemaryTaskModel.max_retry
+            )
+        ).with_for_update(skip_locked=True)
+        res = await session.execute(select_query)
+        ids_to_update = res.scalars().all()
+
+        update_status = update(RosemaryTaskModel).where(
+            RosemaryTaskModel.id.in_(ids_to_update)
+        ).values(
+            status=StatusTaskRosemary.FATAL.value,
+            retry=RosemaryTaskModel.retry + 1,
+            worker=self.worker_db.id
+        )
+        await session.execute(update_status)
+        await session.commit()
+
+        select_query = select(RosemaryTaskModel.id).join(RosemaryWorkerModel).where(
+            and_(
+                RosemaryTaskModel.status.in_([
+                    StatusTaskRosemary.IN_PROGRESS.value,
+                    StatusTaskRosemary.FAILED.value,
+                    StatusTaskRosemary.NEW.value,
+                ]),
+                RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
+                (RosemaryTaskModel.retry + 1) < RosemaryTaskModel.max_retry
+            )
+        ).with_for_update(skip_locked=True)
+
+        res = await session.execute(select_query)
+        ids_to_update = res.scalars().all()
+        update_status = update(RosemaryTaskModel).where(
+            RosemaryTaskModel.id.in_(ids_to_update)
+        ).values(
+            status=StatusTaskRosemary.FAILED.value,
+            retry=RosemaryTaskModel.retry + 1,
+            worker=self.worker_db.id
         )
         await session.execute(update_status)
         await session.commit()

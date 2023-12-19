@@ -24,7 +24,7 @@ class RosemaryTaskModel(Base):
     max_retry: int = Column(Integer, default=1, nullable=False)
     error: str = Column(String, default=None)
     task_return: str = Column(String, default=None)
-    worker = Column(Integer, ForeignKey('rosemary_worker.id'), nullable=True)
+    worker = Column(Integer, ForeignKey('rosemary_worker.id'), nullable=True, default=None)
     timeout: int = Column(Integer, default=30, nullable=False)
     delay = Column(DateTime, default=func.now(), nullable=False)
     created_at = Column(DateTime, default=func.now())
