@@ -1,3 +1,4 @@
+from rosemary import RosemaryInterval
 from rosemary.rosemary import Rosemary
 
 rosemary = Rosemary(
@@ -8,4 +9,5 @@ rosemary = Rosemary(
     db_name_db='postgres',
     max_tasks_per_worker=30,
     workers=3,
+    delete_old_tasks=RosemaryInterval(days=1)
 )

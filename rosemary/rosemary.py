@@ -9,6 +9,7 @@ from typing import Type, Iterable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from rosemary import RosemaryInterval
 from rosemary.db.alembic import Alembic
 from rosemary.db.db import DBConnector
 from rosemary.core.logger import get_logger
@@ -61,6 +62,7 @@ class Rosemary:
             logger: Logger | None = None,
             max_tasks_per_worker: int = 50,
             workers: int = 1,
+            delete_old_tasks: RosemaryInterval | None = None
     ):
         self._max_task_semaphore: int = max_tasks_per_worker
         self.logger: Logger = logger or get_logger('Main')
@@ -69,6 +71,8 @@ class Rosemary:
         self._workers = []
         self._registered_tasks = {}
         self._repeatable_tasks = []
+
+        self._delete_old_tasks: RosemaryInterval | None = delete_old_tasks
 
         self.__db_host = db_host
         self.__db_port = db_port
@@ -148,6 +152,7 @@ class Rosemary:
             db_schema=self.__db_schema,
             db_port=self.__db_port,
             shutdown_event=shutdown_event,
+            delete_old_tasks=self._delete_old_tasks,
         )
         main_worker.logger.info(f'Worker created!')
         thread = threading.Thread(target=main_worker.run)

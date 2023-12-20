@@ -3,13 +3,15 @@ from logging import Logger
 
 import asyncio
 import threading
-from sqlalchemy import update, select, func, and_, or_
+from sqlalchemy import update, select, func, and_, or_, delete, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from rosemary import RosemaryInterval
 from rosemary.core.logger import get_logger
 from rosemary.db.db import DBConnector
 from rosemary.db.models import RosemaryTaskModel, RosemaryWorkerModel
-from rosemary.settings import TIME_FOR_WAITING_PING, TIME_FACTOR_TO_FIX_STATUS, PAUSE_FOR_CYCLE_MAIN_WORKER
+from rosemary.settings import TIME_FOR_WAITING_PING, TIME_FACTOR_TO_FIX_STATUS, PAUSE_FOR_CYCLE_MAIN_WORKER, \
+    TIME_FOR_DELETE_OLD_WORKER
 from rosemary.tasks.constants import StatusTaskRosemary
 from rosemary.worker.constants import StatusWorkerRosemary, ESCAPE_ERROR
 from rosemary.worker.worker_interface import RosemaryWorkerInterface
@@ -26,8 +28,9 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
             db_schema: str,
             shutdown_event: threading.Event,
             logger: Logger | None = None,
+            delete_old_tasks: RosemaryInterval | None = None,
     ):
-        self.uuid = uuid.uuid4()
+        self._delete_old_tasks = delete_old_tasks
         self.db_connector = None
         self.logger: Logger | None = get_logger('MAIN') or logger
 
@@ -207,13 +210,44 @@ class RosemaryMainWorker(RosemaryWorkerInterface):
         await session.execute(update_status)
         await session.commit()
 
+    async def __delete_old_tasks(self, session: AsyncSession):
+        if self._delete_old_tasks:
+            query = delete(RosemaryTaskModel).where(
+                and_(
+                    RosemaryTaskModel.status.in_([
+                        StatusTaskRosemary.FATAL.value,
+                        StatusTaskRosemary.FINISHED.value,
+                    ]),
+                    RosemaryTaskModel.updated_at < func.now() - self._delete_old_tasks.get_interval()
+                )
+            )
+            await session.execute(query)
+            await session.commit()
+
+    async def __delete_old_worker(self, session: AsyncSession):
+        subquery = ~exists().where(RosemaryTaskModel.worker == RosemaryWorkerModel.id)
+
+        query = delete(RosemaryWorkerModel).where(
+            and_(
+                RosemaryWorkerModel.status == StatusWorkerRosemary.KILLED.value,
+                RosemaryWorkerModel.ping_time < func.now() - func.make_interval(
+                    0, 0, 0, 0, TIME_FOR_DELETE_OLD_WORKER, 0, 0
+                ),
+                subquery
+            )
+        )
+        await session.execute(query)
+        await session.commit()
+
     async def _looping(self):
         async with self.db_connector.get_session() as session:
             self.logger.info(f'Start looping by main worker')
             while not self.__shutdown_event.is_set():
-                await asyncio.sleep(PAUSE_FOR_CYCLE_MAIN_WORKER)
                 await self.__check_stuck_tasks_by_other_workers(session)
                 await self.__check_stuck_tasks(session)
                 await self.__check_deaths_workers(session)
+                await self.__delete_old_worker(session)
+                await self.__delete_old_tasks(session)
 
-            self.logger.info(f'Rosemary main worker {self.uuid} is shutdown warm!')
+                await asyncio.sleep(PAUSE_FOR_CYCLE_MAIN_WORKER)
+            self.logger.info(f'Rosemary main worker is shutdown warm!')

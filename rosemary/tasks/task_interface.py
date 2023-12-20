@@ -13,7 +13,7 @@ from rosemary.tasks.constants import TypeTaskRosemary
 class InterfaceRosemaryTask(ABC):
     max_retry = 3
     delay_retry: RosemaryInterval = RosemaryInterval(seconds=5)
-    delay: RosemaryInterval = RosemaryInterval(seconds=10)
+    delay_repeat: RosemaryInterval = RosemaryInterval(seconds=10)
     type_task = TypeTaskRosemary.NOT_SETUP
     timeout = 30
 

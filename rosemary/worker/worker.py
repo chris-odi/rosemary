@@ -9,6 +9,7 @@ from typing import Type
 from sqlalchemy import select, Sequence, and_, func, update, case, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from rosemary import RosemaryInterval
 from rosemary.tasks.constants import StatusTaskRosemary, TypeTaskRosemary
 from rosemary.worker.constants import StatusWorkerRosemary
 from rosemary.core.custom_semaphore import CustomSemaphore
@@ -185,7 +186,7 @@ class RosemaryWorker(RosemaryWorkerInterface):
                     and task and task.get_type() == TypeTaskRosemary.REPEATABLE.value
                     and self.get_task_by_name(task_db.name)):
                 await task.create(
-                    data=task_db.data, session=session, delay=task.delay.get_datetime_plus_interval()
+                    data=task_db.data, session=session, delay=task.delay_repeat.get_datetime_plus_interval()
                 )
         except Exception as e:
             self.logger.exception(f'>>> Error while creating session for DB {e}. Task: {id_task}', exc_info=e)

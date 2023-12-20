@@ -60,8 +60,8 @@ class SleepTask(rosemary.ManualTask):
     # Delay before retry when happen exception
     delay_retry: RosemaryInterval = RosemaryInterval(seconds=5)
     
-    # Delay before start task
-    delay: RosemaryInterval = RosemaryInterval(seconds=10)
+    # Delay for repeatable tasks. Using when tasks recreate
+    delay_repeat: RosemaryInterval = RosemaryInterval(seconds=10)
     
     # How much time waiting for one task
     timeout = 30

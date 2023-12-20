@@ -11,7 +11,7 @@ def get_logger(name_worker: str):
     console_handler.setLevel(logging.INFO)
 
     formatter = logging.Formatter(
-        '[%(asctime)s] %(name)s >%(levelname)s %(message)s')
+        '[%(asctime)s] %(name)s %(message)s')
     console_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)
