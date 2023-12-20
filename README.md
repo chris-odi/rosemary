@@ -38,6 +38,9 @@ rosemary = Rosemary(
     # Count of your workers. If one of worker will be died, rosemary recreate it.
     # Minimum 1
     workers=3,  
+    
+    # Remove tasks that are either in the FINISHED or FATAL status and whose last update time has expired
+    delete_old_tasks=RosemaryInterval(days=1)
 )
 ```
 
