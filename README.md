@@ -11,6 +11,10 @@
     `poetry add rosemary`
 
 How to use:
+You can look at example:
+https://github.com/chris-odi/rosemary/tree/main/example
+
+
 
 1. Create file `rosemary_config.py` for initial config for connect to DB and etc.
 ```python
